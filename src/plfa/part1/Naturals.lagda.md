@@ -439,6 +439,31 @@ Compute `3 + 4`, writing out your reasoning as a chain of equations, using the e
 
 ```agda
 -- Your code goes here
+_ : 3 + 4 ≡ 7
+_ = 
+  begin
+    3 + 4
+  ≡⟨⟩
+    (suc 2) + 4
+  ≡⟨⟩
+    suc (2 + 4)
+  ≡⟨⟩
+    suc ((suc 1) + 4)
+  ≡⟨⟩
+    suc (suc (1 + 4))
+  ≡⟨⟩
+    suc (suc (suc zero) + 4)
+  ≡⟨⟩
+    suc (suc (suc (zero + 4)))
+  ≡⟨⟩
+    suc (suc (suc 4))
+  ≡⟨⟩
+    suc (suc 5)
+  ≡⟨⟩
+    suc 6
+  ≡⟨⟩
+    7
+  ∎
 ```
 
 
