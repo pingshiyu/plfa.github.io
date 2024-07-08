@@ -525,6 +525,31 @@ Compute `3 * 4`, writing out your reasoning as a chain of equations, using the e
 (You do not need to step through the evaluation of `+`.)
 
 ```agda
+_ : 3 * 4 ≡ 12
+_ = 
+  begin
+    3 * 4 
+  ≡⟨⟩
+    (suc 2) * 4
+  ≡⟨⟩
+    4 + (2 * 4)
+  ≡⟨⟩
+    4 + ((suc 1) * 4)
+  ≡⟨⟩
+    4 + (4 + (1 * 4))
+  ≡⟨⟩
+    4 + (4 + ((suc 0) * 4))
+  ≡⟨⟩
+    4 + (4 + (4 + (0 * 4)))
+  ≡⟨⟩
+    4 + (4 + (4 + 0))
+  ≡⟨⟩
+    4 + (4 + 4)
+  ≡⟨⟩
+    4 + 8
+  ≡⟨⟩
+    12
+  ∎
 -- Your code goes here
 ```
 
@@ -540,6 +565,33 @@ Check that `3 ^ 4` is `81`.
 
 ```agda
 -- Your code goes here
+_^_ : ℕ → ℕ → ℕ
+n ^ zero = suc zero
+n ^ (suc m) = n * (n ^ m)
+
+_ : 3 ^ 4 ≡ 81
+_ = 
+  begin
+    3 ^ 4
+  ≡⟨⟩
+    3 * (3 ^ 3)
+  ≡⟨⟩
+    3 * (3 * (3 ^ 2))
+  ≡⟨⟩
+    3 * (3 * (3 * (3 ^ 1)))
+  ≡⟨⟩
+    3 * (3 * (3 * (3 * (3 ^ 0))))
+  ≡⟨⟩
+    3 * (3 * (3 * (3 * 1)))
+  ≡⟨⟩
+    3 * (3 * (3 * 3))
+  ≡⟨⟩
+    3 * (3 * 9)
+  ≡⟨⟩
+    3 * 27
+  ≡⟨⟩
+    81
+  ∎
 ```
 
 
@@ -623,6 +675,33 @@ Compute `5 ∸ 3` and `3 ∸ 5`, writing out your reasoning as a chain of equati
 
 ```agda
 -- Your code goes here
+_ : 5 ∸ 3 ≡ 2
+_ = 
+  begin
+    5 ∸ 3
+  ≡⟨⟩
+    4 ∸ 2
+  ≡⟨⟩
+    3 ∸ 1
+  ≡⟨⟩
+    2 ∸ 0
+  ≡⟨⟩
+    2
+  ∎
+
+_ : 3 ∸ 5 ≡ 0
+_ = 
+  begin
+    3 ∸ 5
+  ≡⟨⟩
+    2 ∸ 4
+  ≡⟨⟩
+    1 ∸ 3
+  ≡⟨⟩
+    0 ∸ 2
+  ≡⟨⟩
+    0
+  ∎
 ```
 
 
@@ -928,6 +1007,8 @@ _m_ and _n_.
 A more efficient representation of natural numbers uses a binary
 rather than a unary system.  We represent a number as a bitstring:
 ```agda
+-- defines a new datatype
+-- then equalities can be used to define "theorems" about the datatype 
 data Bin : Set where
   ⟨⟩ : Bin
   _O : Bin → Bin
@@ -970,6 +1051,64 @@ Confirm that these both give the correct answer for zero through four.
 
 ```agda
 -- Your code goes here
+inc : Bin → Bin
+inc ⟨⟩ = ⟨⟩ I
+inc (⟨⟩ O) = ⟨⟩ I 
+inc (b O) = b I
+inc (b I) = (inc b) O
+
+_ : inc (⟨⟩ I O I I) ≡ ⟨⟩ I I O O
+_ = 
+  begin
+    inc (⟨⟩ I O I I)
+  ≡⟨⟩ 
+    (inc (⟨⟩ I O I)) O
+  ≡⟨⟩
+    ((inc (⟨⟩ I O)) O O)
+  ≡⟨⟩
+    ((⟨⟩ I I) O O)
+  ≡⟨⟩
+    ⟨⟩ I I O O
+  ∎
+
+to : ℕ → Bin
+to zero = ⟨⟩ O
+to (suc n) = inc (to n)
+
+_ : to 0 ≡ ⟨⟩ O
+_ = refl
+
+_ : to 1 ≡ ⟨⟩ I
+_ = refl
+
+_ : to 2 ≡ ⟨⟩ I O
+_ = refl
+
+_ : to 3 ≡ ⟨⟩ I I
+_ = refl
+
+_ : to 4 ≡ ⟨⟩ I O O
+_ = refl
+
+from : Bin → ℕ
+from ⟨⟩ = 0
+from (b O) = 2 * (from b)
+from (b I) = 2 * (from b) + 1
+
+_ : from (⟨⟩ O) ≡ 0
+_ = refl
+
+_ : from (⟨⟩ I) ≡ 1
+_ = refl
+
+_ : from (⟨⟩ I O) ≡ 2
+_ = refl
+
+_ : from (⟨⟩ I I) ≡ 3
+_ = refl
+
+_ : from (⟨⟩ I O O) ≡ 4
+_ = refl
 ```
 
 
