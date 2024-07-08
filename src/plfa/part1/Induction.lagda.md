@@ -74,11 +74,12 @@ that a newly introduced operator is associative but not commutative.
 Give another example of a pair of operators that have an identity
 and are associative, commutative, and distribute over one another.
 (You do not have to prove these properties.)
+  + and *
 
 Give an example of an operator that has an identity and is
 associative but is not commutative.
 (You do not have to prove these properties.)
-
+  matrix multiplication
 
 ## Associativity
 
@@ -416,6 +417,8 @@ Our first lemma states that zero is also a right-identity:
 
 Here is the lemma's statement and proof:
 ```agda
+-- forall proof: a separate proof for each `m`
+-- in singletons these would be promoted data values that appears in the type signature
 +-identityʳ : ∀ (m : ℕ) → m + zero ≡ m
 +-identityʳ zero =
   begin
@@ -794,6 +797,12 @@ Begin by typing:
     +-assoc′ : ∀ (m n p : ℕ) → (m + n) + p ≡ m + (n + p)
     +-assoc′ m n p = ?
 
+```agda
++-assoc' : ∀ (m n p : ℕ) → (m + n) + p ≡ m + (n + p)
++-assoc' zero n p = refl
++-assoc' (suc m) n p rewrite +-assoc' m n p = refl
+```
+
 The question mark indicates that you would like Agda to help with
 filling in that part of the code.  If you type `C-c C-l` (control-c
 followed by control-l), the question mark will be replaced:
@@ -891,6 +900,8 @@ is associative and commutative.
 
 ```agda
 -- Your code goes here
+plus-swap : ∀ (m n p : ℕ) → m + (n + p) ≡ n + (m + p)
+plus-swap m n p rewrite sym (+-assoc' m n p) | +-comm′ m n | +-assoc' n m p = refl
 ```
 
 
@@ -904,6 +915,9 @@ for all naturals `m`, `n`, and `p`.
 
 ```agda
 -- Your code goes here
+times-distrib-plus : ∀ (m n p : ℕ) → (m + n) * p ≡ m * p + n * p
+times-distrib-plus zero n p rewrite +-comm zero n = refl
+times-distrib-plus (suc m) n p rewrite +-suc m n | times-distrib-plus m n p | +-assoc p (m * p) (n * p) = refl
 ```
 
 
@@ -916,7 +930,9 @@ Show multiplication is associative, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```agda
--- Your code goes here
+times-assoc : ∀ (m n p : ℕ) → (m * n) * p ≡ m * (n * p)
+times-assoc zero n p = refl 
+times-assoc (suc m) n p rewrite times-distrib-plus n (m * n) p | times-assoc m n p = refl 
 ```
 
 
