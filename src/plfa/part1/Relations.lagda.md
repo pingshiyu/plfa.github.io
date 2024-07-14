@@ -15,8 +15,9 @@ the next step is to define relations, such as _less than or equal_.
 ```agda
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; refl; cong)
-open import Data.Nat using (ℕ; zero; suc; _+_)
-open import Data.Nat.Properties using (+-comm; +-identityʳ)
+open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; _∎)
+open import Data.Nat using (ℕ; zero; suc; _+_; _*_)
+open import Data.Nat.Properties using (+-comm; +-identityʳ; *-comm; *-suc)
 ```
 
 
@@ -243,13 +244,26 @@ partial order but not a total order.
 Give an example of a preorder that is not a partial order.
 
 ```agda
--- Your code goes here
+-- e.g. {(a,a), (a,b), (b,a), (b,b)} is a preorder but not a partial order
+-- preorder because:
+--  1. reflexive -> (a,a), (b,b) present
+--  2. transitive -> (a,b)&(b,a) => (a,a), likewise (b,a)&(a,b) => (b,b)
+--  3. not antisymmetric: (a,b), (b,a) =/> a == b
+
+-- alternatively, take the graph with cycles
+-- then define a relation a <= b if and only if a can reach b through a 
+-- path on the graph.
+-- then the reachable relation is a reflexive and transitive relation, but
+-- is not antisymmetric.
 ```
 
 Give an example of a partial order that is not a total order.
 
 ```agda
--- Your code goes here
+-- union two total orders on O1 and O2 together. This is an order on 
+-- O1 u O2 and, but has no ordering relations between O1 and O2. 
+-- this is not a total order on O1 u O2 but is a partial order still,
+-- since each components are a partial order.
 ```
 
 ## Reflexivity
@@ -285,7 +299,10 @@ hold, then `m ≤ p` holds.  Again, `m`, `n`, and `p` are implicit:
   → n ≤ p
     -----
   → m ≤ p
-≤-trans z≤n       _          =  z≤n
+-- constructor z≤n requires only n to be specified. 
+-- requirement is: given two terms of m≤n, n≤p, construct an instance
+-- of m≤p.
+≤-trans z≤n       _          =  z≤n 
 ≤-trans (s≤s m≤n) (s≤s n≤p)  =  s≤s (≤-trans m≤n n≤p)
 ```
 Here the proof is by induction on the _evidence_ that `m ≤ n`.  In the
@@ -363,6 +380,8 @@ argument is `s≤s`.  Why is it ok to omit them?
 
 ```agda
 -- Your code goes here
+-- ≤-antisym with (z≤n ∧ s≤s) → z ≤ n ∧ suc n' ≤ suc 0' → m ≡ n ∧ n ≡ z
+-- ≤-antisym with (s≤s ∧ z≤n) → suc m' ≤ suc n' ∧ z ≤ m → n ≡ z ∧ m ≡ z
 ```
 
 
@@ -420,11 +439,13 @@ preference to indexed types when possible.
 
 With that preliminary out of the way, we specify and prove totality:
 ```agda
+-- that is, total for natural numbers
 ≤-total : ∀ (m n : ℕ) → Total m n
 ≤-total zero    n                         =  forward z≤n
 ≤-total (suc m) zero                      =  flipped z≤n
+-- get a proof for ≤-total m n, case split on that
 ≤-total (suc m) (suc n) with ≤-total m n
-...                        | forward m≤n  =  forward (s≤s m≤n)
+...                        | forward m≤n  =  forward (s≤s m≤n) -- apply proof of m <= n on suc m <= suc n
 ...                        | flipped n≤m  =  flipped (s≤s n≤m)
 ```
 In this case the proof is by induction over both the first
@@ -552,7 +573,18 @@ transitivity proves `m + p ≤ n + q`, as was to be shown.
 Show that multiplication is monotonic with regard to inequality.
 
 ```agda
--- Your code goes here
+*-mono-r-≤ : ∀ (n p q : ℕ)
+  → p ≤ q
+    -------------
+  → n * p ≤ n * q
+*-mono-r-≤ zero p q p≤q = z≤n
+*-mono-r-≤ (suc n) p q p≤q = 
+  ≤-trans {(suc n) * p} {q + p * n} {(suc n) * q} p1 p2 
+    where
+      p1 : (suc n) * p ≤ q + p * n 
+      p1 rewrite *-comm n p = +-monoˡ-≤ p q (p * n) p≤q
+      p2 : q + p * n ≤ (suc n) * q
+      p2 rewrite *-comm (suc n) q | *-suc q n | *-comm p n | *-comm q n = +-monoʳ-≤ q (n * p) (n * q) (*-mono-r-≤ n p q p≤q)  
 ```
 
 
@@ -841,3 +873,4 @@ This chapter uses the following unicode:
 
 The commands `\^l` and `\^r` give access to a variety of superscript
 leftward and rightward arrows in addition to superscript letters `l` and `r`.
+ 
