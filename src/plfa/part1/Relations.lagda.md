@@ -632,7 +632,13 @@ Show that strict inequality is transitive. Use a direct proof. (A later
 exercise exploits the relation between < and ≤.)
 
 ```agda
--- Your code goes here
+trans-< : ∀ (a b c : ℕ)
+  → a < b 
+  → b < c
+    -------------
+  → a < c
+trans-< zero (suc b') (suc c') _ _ = z<s
+trans-< a b c (s<s {a'} {b'} a'<b') (s<s {b'} {c'} b'<c') = s<s (trans-< a' b' c' a'<b' b'<c')
 ```
 
 #### Exercise `trichotomy` (practice) {#trichotomy}
