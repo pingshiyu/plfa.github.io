@@ -805,7 +805,21 @@ successor of the sum of two even numbers, which is even.
 Show that the sum of two odd numbers is even.
 
 ```agda
--- Your code goes here
+o+o≡e : ∀ {n m : ℕ} 
+  → odd n 
+  → odd m
+    -----------
+  → even (n + m)
+
+e+o≡o : ∀ {n m : ℕ}
+  → even n 
+  → odd m 
+    -----------
+  → odd (n + m)
+
+e+o≡o zero odd_m = odd_m
+e+o≡o (suc odd_n) odd_m = suc (o+o≡e odd_n odd_m)
+o+o≡e (suc even_n) odd_m = suc (e+o≡o even_n odd_m)
 ```
 
 #### Exercise `Bin-predicates` (stretch) {#Bin-predicates}
