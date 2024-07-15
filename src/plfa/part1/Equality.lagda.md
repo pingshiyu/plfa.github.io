@@ -37,6 +37,11 @@ of using parameters wherever possible.  The first argument to `_≡_`
 can be a parameter because it doesn't vary, while the second must be
 an index, so it can be required to be equal to the first.
 
+```agda
+-- something like 
+-- _≡_ :: A → (A → Set) → (A ≡ (A → Set))
+```
+
 We declare the precedence of equality as follows:
 ```agda
 infix 4 _≡_
@@ -298,6 +303,9 @@ of `_≡⟨_⟩_`)
 
 ```agda
 -- Your code goes here
+-- the definition would be circular?
+-- _≡⟨_⟩_ uses trans in its definition
+-- whilst trans' uses _≡⟨_⟩_ in its definition
 ```
 
 ## Chains of equations, another example
@@ -563,6 +571,7 @@ for every predicate `P` over type `A` we have that `P x` implies `P y`:
 ```agda
 _≐_ : ∀ {A : Set} (x y : A) → Set₁
 _≐_ {A} x y = ∀ (P : A → Set) → P x → P y
+-- for any predicate P, whenever P x holds, P y holds too.
 ```
 We cannot write the left-hand side of the equation as `x ≐ y`,
 and instead we write `_≐_ {A} x y` to provide access to the implicit
@@ -575,6 +584,13 @@ where `Set : Set₁`, `Set₁ : Set₂`, and so on.  In fact, `Set` itself
 is just an abbreviation for `Set₀`.  Since the equation defining `_≐_`
 mentions `Set` on the right-hand side, the corresponding signature
 must use `Set₁`.  We say a bit more about levels below.
+
+```agda
+-- that is, Set₀ means sets,
+--          Set₁ means set of sets,
+--          Set₂ means set of set of sets,
+--          ... and so on.
+```
 
 Leibniz equality is reflexive and transitive,
 where the first follows by a variant of the identity function
@@ -611,10 +627,15 @@ sym-≐ {A} {x} {y} x≐y P  =  Qy
 ```
 
 Given `x ≐ y`, a specific `P`, we have to construct a proof that `P y`
-implies `P x`.  To do so, we instantiate the equality with a predicate
-`Q` such that `Q z` holds if `P z` implies `P x`.  The property `Q x`
-is trivial by reflexivity, and hence `Q y` follows from `x ≐ y`.  But
-`Q y` is exactly a proof of what we require, that `P y` implies `P x`.
+implies `P x`.  To do so, we instantiate the (x ≐ y) equality with a 
+predicate `Q` such that `Q z` holds if `P z` implies `P x`.  
+
+We know that since `x ≐ y`, `Q x` implies `Q y`. We need to show `Q x`
+holds (which is `Q x = P x → P x`).
+
+The property `Q x` is trivial by reflexivity, and hence `Q y` follows 
+from `x ≐ y`.  But `Q y` is exactly a proof of what we require, that
+`P y` implies `P x`.
 
 We now show that Martin-Löf equality implies
 Leibniz equality, and vice versa.  In the forward direction, if we know
@@ -671,6 +692,7 @@ The answer is _universe polymorphism_, where a definition is made
 with respect to an arbitrary level `ℓ`. To make use of levels, we
 first import the following:
 ```agda
+-- QUESTION: how do you know what level within Set you are?
 open import Level using (Level; _⊔_) renaming (zero to lzero; suc to lsuc)
 ```
 We rename constructors `zero` and `suc` to `lzero` and `lsuc` to avoid confusion
