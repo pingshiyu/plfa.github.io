@@ -673,7 +673,22 @@ As with inequality, some additional definitions may be required.
 Show that `suc m ≤ n` implies `m < n`, and conversely.
 
 ```agda
--- Your code goes here
+≤→< : ∀ (a b : ℕ)
+  → suc a ≤ b
+  → a < b
+≤→< zero (suc b') _ = z<s {b'}
+≤→< (suc m') (suc n') suc_suc_m'≤suc_n' = s<s (≤→< m' n' (inv-s≤s suc_suc_m'≤suc_n'))
+
+<→≤ : ∀ (a b : ℕ)
+  → a < b
+  → suc a ≤ b
+<→≤ zero (suc b') _ = s≤s z≤n
+<→≤ (suc m') (suc n') suc_m'<suc_n' = s≤s (<→≤ m' n' (inv-s<s suc_m'<suc_n'))
+  where 
+    inv-s<s : ∀ {a b : ℕ}
+      → suc a < suc b 
+      → a < b
+    inv-s<s (s<s a<b) = a<b
 ```
 
 #### Exercise `<-trans-revisited` (practice) {#less-trans-revisited}
