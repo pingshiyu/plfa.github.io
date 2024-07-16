@@ -213,6 +213,7 @@ Isomorphism is an equivalence, meaning that it is reflexive, symmetric,
 and transitive.  To show isomorphism is reflexive, we take both `to`
 and `from` to be the identity function:
 ```agda
+-- proof that A is isomorphic to itself
 ≃-refl : ∀ {A : Set}
     -----
   → A ≃ A
@@ -259,13 +260,13 @@ functions, and use equational reasoning to combine the inverses:
     { to       = to   B≃C ∘ to   A≃B
     ; from     = from A≃B ∘ from B≃C
     ; from∘to  = λ{x →
-        begin
+        begin -- expand definition of to and from
           (from A≃B ∘ from B≃C) ((to B≃C ∘ to A≃B) x)
-        ≡⟨⟩
+        ≡⟨⟩ -- definition of composition
           from A≃B (from B≃C (to B≃C (to A≃B x)))
-        ≡⟨ cong (from A≃B) (from∘to B≃C (to A≃B x)) ⟩
+        ≡⟨ cong (from A≃B) (from∘to B≃C (to A≃B x)) ⟩ -- identity of from . to of B≃C
           from A≃B (to A≃B x)
-        ≡⟨ from∘to A≃B x ⟩
+        ≡⟨ from∘to A≃B x ⟩ -- identity of from . to of A≃B
           x
         ∎}
     ; to∘from = λ{y →
@@ -333,7 +334,7 @@ record _≲_ (A B : Set) : Set where
   field
     to      : A → B
     from    : B → A
-    from∘to : ∀ (x : A) → from (to x) ≡ x
+    from∘to : ∀ (x : A) → from (to x) ≡ x -- A ⊂ B
 open _≲_
 ```
 It is the same as an isomorphism, save that it lacks the `to∘from` field.
@@ -437,15 +438,16 @@ open ≲-Reasoning
 
 Show that every isomorphism implies an embedding.
 ```agda
-postulate
-  ≃-implies-≲ : ∀ {A B : Set}
-    → A ≃ B
-      -----
-    → A ≲ B
-```
-
-```agda
--- Your code goes here
+≃-implies-≲ : ∀ {A B : Set}
+  → A ≃ B
+    -----
+  → A ≲ B
+≃-implies-≲ A≃B = 
+  record 
+    { to = to A≃B
+    ; from = from A≃B
+    ; from∘to = from∘to A≃B
+    }
 ```
 
 #### Exercise `_⇔_` (practice) {#iff}
@@ -460,7 +462,32 @@ record _⇔_ (A B : Set) : Set where
 Show that equivalence is reflexive, symmetric, and transitive.
 
 ```agda
--- Your code goes here
+⇔-refl : ∀ {A : Set}
+  --------
+  → A ⇔ A
+⇔-refl = record
+  { to = λ{x → x}
+  ; from = λ{x → x}
+  }
+
+⇔-sym : ∀ {A B : Set}
+  → A ⇔ B
+  --------
+  → B ⇔ A
+⇔-sym A⇔B = record
+  { to = _⇔_.from A⇔B
+  ; from = _⇔_.to A⇔B
+  }
+
+⇔-trans : ∀ {A B C : Set}
+  → A ⇔ B
+  → B ⇔ C
+  --------
+  → A ⇔ C
+⇔-trans A⇔B B⇔C = record
+  { to = (_⇔_.to B⇔C) ∘ (_⇔_.to A⇔B)
+  ; from = (_⇔_.from A⇔B) ∘ (_⇔_.from B⇔C)
+  }
 ```
 
 #### Exercise `Bin-embedding` (stretch) {#Bin-embedding}
