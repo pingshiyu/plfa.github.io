@@ -117,6 +117,9 @@ record _×′_ (A B : Set) : Set where
     proj₁′ : A
     proj₂′ : B
 open _×′_
+
+-- by definition η-× holds since η-× is saying that ⟨ proj₁ w, proj₂ w ⟩ ≡ w
+-- and is the definition of ⟨_×_⟩
 ```
 The record construction `record { proj₁′ = M ; proj₂′ = N }` corresponds to the
 term `⟨ M , N ⟩` where `M` is a term of type `A` and `N` is a term of type `B`.
@@ -239,6 +242,14 @@ is isomorphic to `(A → B) × (B → A)`.
 
 ```agda
 -- Your code goes here
+⇔≃× : ∀ {A B : Set}
+  → A ⇔ B ≃ (A → B) × (B → A)
+⇔≃× = record
+  { to = λ{ A⇔B → ⟨ (_⇔_.to A⇔B), (_⇔_.from A⇔B) ⟩ }
+  ; from = λ{ pair → record { to = proj₁ pair; from = proj₂ pair }}
+  ; from∘to = λ { A⇔B → refl }
+  ; to∘from = λ { ⟨ fa , fb ⟩ → refl } 
+  }
 ```
 
 
@@ -283,6 +294,9 @@ similarly, but η-equality holds *by definition* for the record type. While
 proving `η-⊤′`, we do not have to pattern match on `w`---Agda *knows* it is
 equal to `tt′`:
 ```agda
+-- is it because the record syntax means there is only 1 constructor
+-- whereas if we went with the datatypes definition, then more constructors
+-- *could* match (the compiler don't know directly there's only 1 constructor)
 η-⊤′ : ∀ (w : ⊤′) → tt′ ≡ w
 η-⊤′ w = refl
 ```
@@ -394,6 +408,14 @@ latter the name `⊎-E`.
 
 Applying the destructor to each of the constructors is the identity:
 ```agda
+-- interesting: all functions are automatically promoted into a type 
+-- as well. this happens by metaprogramming in haskell but automatically
+-- in agda.
+
+-- inj₁ : A → A ⊎ B 
+-- inj₂ : B → A ⊎ B
+--                                              ( C )
+-- case-⊎ : (A → A ⊎ B) → (B → A ⊎ B) → A ⊎ B → A ⊎ B
 η-⊎ : ∀ {A B : Set} (w : A ⊎ B) → case-⊎ inj₁ inj₂ w ≡ w
 η-⊎ (inj₁ x) = refl
 η-⊎ (inj₂ y) = refl
@@ -402,8 +424,8 @@ More generally, we can also throw in an arbitrary function from a disjunction:
 ```agda
 uniq-⊎ : ∀ {A B C : Set} (h : A ⊎ B → C) (w : A ⊎ B) →
   case-⊎ (h ∘ inj₁) (h ∘ inj₂) w ≡ h w
-uniq-⊎ h (inj₁ x) = refl
-uniq-⊎ h (inj₂ y) = refl
+uniq-⊎ h (inj₁ x) = refl -- matches the inL of the union
+uniq-⊎ h (inj₂ y) = refl -- matches the inR of the union
 ```
 The pattern matching on the left-hand side is essential.  Replacing
 `w` by `inj₁ x` allows both sides of the propositional equality to
@@ -451,7 +473,16 @@ commutative and associative _up to isomorphism_.
 Show sum is commutative up to isomorphism.
 
 ```agda
--- Your code goes here
+⊎-comm : ∀ {A B : Set}
+  → A ⊎ B ≃ B ⊎ A
+⊎-comm = record
+  { to = λ{ (inj₁ x) → inj₂ x ; (inj₂ y) → inj₁ y }
+  ; from = λ{ (inj₁ x) → inj₂ x ; (inj₂ y) → inj₁ y }
+  ; to∘from = λ{ (inj₁ x) → refl ; (inj₂ y) → refl }
+  ; from∘to = λ{ (inj₁ x) → refl ; (inj₂ y) → refl }
+  }
+-- so refl is like a value, with the semantics that it is the same as 
+-- the argument?
 ```
 
 #### Exercise `⊎-assoc` (practice)
@@ -498,6 +529,8 @@ in the standard library.
 The nullary case of `uniq-⊎` is `uniq-⊥`, which asserts that `⊥-elim`
 is equal to any arbitrary function from `⊥`:
 ```agda
+-- why not:
+-- uniq-⊥ : ∀ {A : Set} (a : A) (w : ⊥) → ⊥-elim w ≡ a 
 uniq-⊥ : ∀ {C : Set} (h : ⊥ → C) (w : ⊥) → ⊥-elim w ≡ h w
 uniq-⊥ h ()
 ```
@@ -522,7 +555,14 @@ is the identity of sums _up to isomorphism_.
 Show empty is the left identity of sums up to isomorphism.
 
 ```agda
--- Your code goes here
+⊥-identityˡ : ∀ {A : Set} 
+  → ⊥ ⊎ A ≃ A
+⊥-identityˡ = record
+  { to = λ{ (inj₂ x) → x }
+  ; from = λ{ x → inj₂ x }
+  ; to∘from = λ{ x → refl }
+  ; from∘to = λ { (inj₂ x) → refl }
+  }
 ```
 
 #### Exercise `⊥-identityʳ` (practice)
@@ -530,7 +570,14 @@ Show empty is the left identity of sums up to isomorphism.
 Show empty is the right identity of sums up to isomorphism.
 
 ```agda
--- Your code goes here
+⊥-identityʳ : ∀ {A : Set} 
+  → A ⊎ ⊥ ≃ A
+⊥-identityʳ = record
+  { to = λ{ (inj₁ x) → x }
+  ; from = λ{ x → inj₁ x }
+  ; to∘from = λ{ x → refl }
+  ; from∘to = λ { (inj₁ x) → refl }
+  }
 ```
 
 ## Implication is function {#implication}
@@ -552,6 +599,7 @@ converts evidence that `A` holds into evidence that `B` holds.
 Put another way, if we know that `A → B` and `A` both hold,
 then we may conclude that `B` holds:
 ```agda
+-- x-elim meaning: Getting rid of the `x` syntax
 →-elim : ∀ {A B : Set}
   → (A → B)
   → A
@@ -568,6 +616,7 @@ while applying a function is referred to as _eliminating_ the function.
 
 Elimination followed by introduction is the identity:
 ```agda
+-- η-x means introducting of syntax `x`
 η-→ : ∀ {A B : Set} (f : A → B) → (λ (x : A) → f x) ≡ f
 η-→ f = refl
 ```
@@ -628,6 +677,7 @@ currying =
     { to      =  λ{ f → λ{ ⟨ x , y ⟩ → f x y }}
     ; from    =  λ{ g → λ{ x → λ{ y → g ⟨ x , y ⟩ }}}
     ; from∘to =  λ{ f → refl }
+    -- extensionality is needed as we want to show functions are equal.
     ; to∘from =  λ{ g → extensionality λ{ ⟨ x , y ⟩ → refl }}
     }
 ```
@@ -686,7 +736,9 @@ and the rule `η-×` for products:
   record
     { to      = λ{ f → ⟨ proj₁ ∘ f , proj₂ ∘ f ⟩ }
     ; from    = λ{ ⟨ g , h ⟩ → λ x → ⟨ g x , h x ⟩ }
-    ; from∘to = λ{ f → extensionality λ{ x → η-× (f x) } }
+    -- ∀x : A, demonstrate a proof for f x ≡ g x. 
+    -- use this to show function equality (f ≡ g)
+    ; from∘to = λ{ f → extensionality λ{ x → η-× (f x) } } 
     ; to∘from = λ{ ⟨ g , h ⟩ → refl }
     }
 ```
@@ -723,9 +775,9 @@ Sums do not distribute over products up to isomorphism, but it is an embedding:
     { to      = λ{ (inj₁ ⟨ x , y ⟩) → ⟨ inj₁ x , inj₁ y ⟩
                  ; (inj₂ z)         → ⟨ inj₂ z , inj₂ z ⟩
                  }
-    ; from    = λ{ ⟨ inj₁ x , inj₁ y ⟩ → (inj₁ ⟨ x , y ⟩)
-                 ; ⟨ inj₁ x , inj₂ z ⟩ → (inj₂ z)
-                 ; ⟨ inj₂ z , _      ⟩ → (inj₂ z)
+    ; from    = λ{ ⟨ inj₁ x , inj₁ y ⟩ → (inj₁ ⟨ x , y ⟩) -- A, B case : is an AxB on LHS
+                 ; ⟨ inj₁ x , inj₂ z ⟩ → (inj₂ z) -- A, C case: is a C on LHS
+                 ; ⟨ inj₂ z , _      ⟩ → (inj₂ z) -- C, C and C, B case: is a C on LHS
                  }
     ; from∘to = λ{ (inj₁ ⟨ x , y ⟩) → refl
                  ; (inj₂ z)         → refl
@@ -749,20 +801,28 @@ implications, then the first corresponds to an isomorphism while the
 second only corresponds to an embedding, revealing a sense in which
 one of these laws is "more true" than the other.
 
+```agda
+-- why is it, in logic, the second law an isomorphism? what don't they
+-- do about the case of (a, _), (a', _)?
+```
 
 #### Exercise `⊎-weak-×` (recommended)
 
 Show that the following property holds:
 ```agda
+⊎-weak-× : ∀ {A B C : Set} → (A ⊎ B) × C → A ⊎ (B × C)
+⊎-weak-× ⟨ inj₁ a , c ⟩ = inj₁ a -- can also do ⟨ a, c ⟩ if type signature permits
+⊎-weak-× ⟨ inj₂ b , c ⟩ = inj₂ ⟨ b , c ⟩
+-- this corresponds to the property: 
+--    (A + B) * C ≥ A + B * C
+-- where the full property is of course
+--     A * C + B * C
+
 postulate
-  ⊎-weak-× : ∀ {A B C : Set} → (A ⊎ B) × C → A ⊎ (B × C)
+  ⊎-× : ∀ {A B C : Set} → (A ⊎ B) × C ≃ (A × C) ⊎ (B × C)
 ```
 This is called a _weak distributive law_. Give the corresponding
 distributive law, and explain how it relates to the weak version.
-
-```agda
--- Your code goes here
-```
 
 
 #### Exercise `⊎×-implies-×⊎` (practice)
@@ -816,3 +876,4 @@ This chapter uses the following unicode:
 
 
 [^from-wadler-2015]: This paragraph was adopted from "Propositions as Types", Philip Wadler, _Communications of the ACM_, December 2015.
+ 
