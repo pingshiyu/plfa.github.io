@@ -328,6 +328,8 @@ intuitionistic logic.  However, we can show that it is _irrefutable_,
 meaning that the negation of its negation is provable (and hence that
 its negation is never provable):
 ```agda
+-- refutable means: may be able to prove its negation
+-- irrefutable: can never prove its negation, hence the double negative.
 em-irrefutable : ∀ {A : Set} → ¬ ¬ (A ⊎ ¬ A)
 em-irrefutable = λ k → k (inj₂ (λ x → k (inj₁ x)))
 ```
@@ -418,7 +420,27 @@ Consider the following principles:
 Show that each of these implies all the others.
 
 ```agda
--- Your code goes here
+-- guess the funny thing about that story is, A ⊎ B is what the devil gave
+-- but he gave no proof for which one of the two holds. After all, it could
+-- be A, B or both holding that lead to A ⊎ B holding.
+-- and so he can actually freely change it by he pleases.
+
+xcl-mid→¬¬-elim : ∀ {A : Set}
+  → A ⊎ ¬ A
+  → ( ¬ ¬ A
+      ------- 
+    → A
+    )
+xcl-mid→¬¬-elim {A} xcl-mid ¬¬A' = get-A xcl-mid
+  where 
+    get-A : A ⊎ ¬ A → A
+    get-A = λ{ (inj₁ A') → A'; (inj₂ ¬A') → ⊥-elim (¬¬A' ¬A') }
+
+-- show the other 4 impls: 
+--  (2) => (3)
+--  (3) => (4)
+--  (4) => (5)
+--  (5) => (1)
 ```
 
 
