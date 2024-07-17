@@ -63,6 +63,19 @@ is a term of type `A` then we may conclude that `B M` holds:
     -----------------
   → B M
 ∀-elim L M = L M
+
+-- dependent meaning: the type depends on the input supplied
+-- e.g. in the case of ∀, the function called is one of the 
+-- ones selected by the input.
+-- in haskell the polymorphism is _not_ on values, but rather
+-- on types, so you can write types like a → a
+-- this is a function for each _type_ available in haskell.
+-- in agda you can write ∀ {x : Nat} → x → x
+-- this is a function for every value `x : Nat`, rather than 
+-- for every type `a`. 
+-- agda also gives you a way to control what to take forall over,
+-- whereas in Haskell you only get to control this based on 
+-- typeclasses (i.e. can only take forall over all types in Hask).
 ```
 As with `→-elim`, the rule corresponds to function application.
 
@@ -90,9 +103,14 @@ dependent product is ambiguous.
 
 Show that universals distribute over conjunction:
 ```agda
-postulate
-  ∀-distrib-× : ∀ {A : Set} {B C : A → Set} →
-    (∀ (x : A) → B x × C x) ≃ (∀ (x : A) → B x) × (∀ (x : A) → C x)
+∀-distrib-× : ∀ {A : Set} {B C : A → Set} →
+  (∀ (x : A) → B x × C x) ≃ (∀ (x : A) → B x) × (∀ (x : A) → C x)
+∀-distrib-× = record
+  { to = λ{ fx → ⟨ proj₁ ∘ fx , proj₂ ∘ fx ⟩ }
+  ; from = λ{ ⟨ fb , fc ⟩ → λ{ x → ⟨ fb x , fc x ⟩ }  }
+  ; from∘to = λ{ x → refl }
+  ; to∘from = λ{ x → refl }  
+  }
 ```
 Compare this with the result (`→-distrib-×`) in
 Chapter [Connectives](/Connectives/).
@@ -248,9 +266,14 @@ establish the isomorphism is identical to what we wrote when discussing
 
 Show that existentials distribute over disjunction:
 ```agda
-postulate
-  ∃-distrib-⊎ : ∀ {A : Set} {B C : A → Set} →
-    ∃[ x ] (B x ⊎ C x) ≃ (∃[ x ] B x) ⊎ (∃[ x ] C x)
+∃-distrib-⊎ : ∀ {A : Set} {B C : A → Set} →
+  ∃[ x ] (B x ⊎ C x) ≃ (∃[ x ] B x) ⊎ (∃[ x ] C x)
+∃-distrib-⊎ = record
+  { to = λ{ ⟨ x , inj₁ Bx ⟩ → inj₁ ⟨ x , Bx ⟩; ⟨ x , inj₂ Cx ⟩ → inj₂ ⟨ x , Cx ⟩ }
+  ; from = λ{ (inj₁ ⟨ x , Bx ⟩) → ⟨ x , inj₁ Bx ⟩; (inj₂ ⟨ x , Cx ⟩) → ⟨ x , inj₂ Cx ⟩ }
+  ; from∘to = λ{ ⟨ x , inj₁ Bx ⟩ → refl; ⟨ x , inj₂ Cx ⟩ → refl } 
+  ; to∘from = λ{ (inj₁ ⟨ x , Bx ⟩) → refl; (inj₂ ⟨ x , Cx ⟩) → refl }
+  }
 ```
 
 #### Exercise `∃×-implies-×∃` (practice)
