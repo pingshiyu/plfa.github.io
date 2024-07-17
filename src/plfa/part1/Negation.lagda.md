@@ -17,8 +17,9 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.Product using (_×_)
-open import plfa.part1.Isomorphism using (_≃_; extensionality)
+open import Data.Product using (_×_) renaming (_,_ to ⟨_,_⟩)
+open import plfa.part1.Isomorphism using (_≃_; extensionality; _∘_; _≲_)
+open import plfa.part1.Relations using (_<_; s<s)
 ```
 
 
@@ -46,11 +47,11 @@ Given evidence that both `¬ A` and `A` hold, we can conclude that `⊥` holds.
 In other words, if both `¬ A` and `A` hold, then we have a contradiction:
 ```agda
 ¬-elim : ∀ {A : Set}
-  → ¬ A
+  → ¬ A -- ¬ A ≃ A → ⊥
   → A
     ---
   → ⊥
-¬-elim ¬x x = ¬x x
+¬-elim ¬x x = ¬x x -- ≃ ⊥
 ```
 Here we write `¬x` for evidence of `¬ A` and `x` for evidence of `A`.  This
 means that `¬x` must be a function of type `A → ⊥`, and hence the application
@@ -67,10 +68,11 @@ In _classical_ logic, we have that `A` is equivalent to `¬ ¬ A`.
 As we discuss below, in Agda we use _intuitionistic_ logic, where
 we have only half of this equivalence, namely that `A` implies `¬ ¬ A`:
 ```agda
+-- but ¬ ¬ A --/--> A in Agda 
 ¬¬-intro : ∀ {A : Set}
   → A
     -----
-  → ¬ ¬ A
+  → ¬ ¬ A -- which should be ¬ A → ⊥, and ¬ A is a function : A → ⊥
 ¬¬-intro x  =  λ{¬x → ¬x x}
 ```
 Let `x` be evidence of `A`. We show that assuming
@@ -190,7 +192,19 @@ Using negation, show that
 is irreflexive, that is, `n < n` holds for no `n`.
 
 ```agda
--- Your code goes here
+inv-s<s : ∀ {a b : ℕ}
+  → suc a < suc b 
+  → a < b
+inv-s<s (s<s a<b) = a<b
+
+<-irreflexive : ∀ {n : ℕ} 
+  → ¬ (n < n)
+<-irreflexive {zero} = λ()
+-- irreflexive {n} gives a proof of ¬ (n < n).
+-- suppose we have a proof of suc n < suc n
+-- then by inversion we have n < n
+-- apply ¬ (n < n) to show ⊥ 
+<-irreflexive {suc n} suc_n<suc_n = <-irreflexive {n} (inv-s<s suc_n<suc_n)
 ```
 
 
@@ -221,7 +235,19 @@ version of De Morgan's Law.
 This result is an easy consequence of something we've proved previously.
 
 ```agda
--- Your code goes here
+→-distrib-⊎ : ∀ {A B C : Set} → (A ⊎ B → C) ≃ ((A → C) × (B → C))
+→-distrib-⊎ =
+  record
+    { to      = λ{ f → ⟨ f ∘ inj₁ , f ∘ inj₂ ⟩ }
+    ; from    = λ{ ⟨ g , h ⟩ → λ{ (inj₁ x) → g x ; (inj₂ y) → h y } }
+    ; from∘to = λ{ f → extensionality λ{ (inj₁ x) → refl ; (inj₂ y) → refl } }
+    ; to∘from = λ{ ⟨ g , h ⟩ → refl }
+    }
+
+-- A ⊎ B → ⊥ ≃ (A → ⊥) × (B → ⊥)
+⊎-dual-× : ∀ {A B : Set} 
+  → ¬ (A ⊎ B) ≃ (¬ A) × (¬ B)
+⊎-dual-× = →-distrib-⊎
 ```
 
 
@@ -232,6 +258,20 @@ Do we also have the following?
 If so, prove; if not, can you give a relation weaker than
 isomorphism that relates the two sides?
 
+```agda
+-- ¬ (A ∧ B)
+-- == (¬ A) ∨ (¬ B)
+-- so it works in logic...
+-- but seems like we only have an implication,
+-- because to get a AxB→⊥, from an A→⊥ or a B→⊥, we need
+-- to have a way to obtain a B or an A (respectively) from nothing
+-- and is not in general possible, since B or A could be empty.
+
+¬⊎→¬× : ∀ {A B : Set} 
+  → (¬ A) ⊎ (¬ B) → (¬ (A × B))
+¬⊎→¬× = λ{ (inj₁ ¬A) → λ { ⟨ a , b ⟩ → ¬A a } ; (inj₂ ¬B) → λ { ⟨ a , b ⟩ → ¬B b } } 
+-- given function A → ⊥ or B → ⊥, give function A×B → ⊥ 
+```
 
 ## Intuitive and Classical logic
 
