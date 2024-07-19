@@ -292,12 +292,24 @@ trouble normalising evidence of negation.)
 
 Analogous to the function above, define a function to decide strict inequality:
 ```agda
-postulate
-  _<?_ : ∀ (m n : ℕ) → Dec (m < n)
-```
+¬s<s : ∀ {m n : ℕ} → ¬ (m < n) → ¬ (suc m < suc n)
+¬s<s ¬m<n (s<s m<n) = ¬m<n m<n 
 
-```agda
--- Your code goes here
+-- does this really work? it doesn't seem to terminate syntactically
+-- does agda know about the missing base case?
+¬n<n : ∀ {n : ℕ} → ¬ (n < n)
+¬n<n (s<s n<n) = ¬n<n n<n
+
+¬s<z : ∀ {n : ℕ} → ¬ (suc n < zero)
+¬s<z () -- no pattern to match (suc n < zero) proof
+
+_<?_ : ∀ (m n : ℕ) → Dec (m < n)
+zero <? zero = no ¬n<n
+zero <? suc n = yes z<s
+suc m <? zero = no ¬s<z
+suc m <? suc n with m <? n 
+...             | yes m<n = yes (s<s m<n)
+...             | no ¬m<n = no (¬s<s ¬m<n)
 ```
 
 #### Exercise `_≡ℕ?_` (practice)
@@ -674,3 +686,4 @@ import Relation.Binary using (Decidable)
     ᵇ  U+1D47  MODIFIER LETTER SMALL B  (\^b)
     ⌊  U+230A  LEFT FLOOR (\clL)
     ⌋  U+230B  RIGHT FLOOR (\clR)
+ 
