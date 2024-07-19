@@ -19,6 +19,7 @@ open import Relation.Nullary using (¬_)
 open import Data.Product using (_×_; proj₁; proj₂) renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import plfa.part1.Isomorphism using (_≃_; extensionality; ∀-extensionality)
+open import plfa.part1.Negation using (¬-elim)
 open import Function using (_∘_)
 ```
 
@@ -452,14 +453,23 @@ requires extensionality.
 
 Show that existential of a negation implies negation of a universal:
 ```agda
-postulate
-  ∃¬-implies-¬∀ : ∀ {A : Set} {B : A → Set}
-    → ∃[ x ] (¬ B x)
-      --------------
-    → ¬ (∀ x → B x)
+∃¬-implies-¬∀ : ∀ {A : Set} {B : A → Set}
+  → ∃[ x ] (¬ B x)
+    --------------
+  → ¬ (∀ x → B x)
+∃¬-implies-¬∀ ⟨ x , ¬Bx ⟩ = λ{ f → ¬-elim ¬Bx (f x) }
 ```
 Does the converse hold? If so, prove; if not, explain why.
-
+```agda
+-- ¬∀-implies-∃¬ : ∀ {A : Set} {B : A → Set}
+--   → ¬ (∀ x → B x)
+--     --------------
+--   → ∃[ x ] (¬ B x)
+-- ¬∀-implies-∃¬ ¬A = ⟨ ? , ? ⟩
+-- it would appear not, since we would need to construct an element
+-- of ∃[ x ] (¬ B x), which requires some `x` to be created - we don't
+-- seem to have the information to show this.
+```
 
 #### Exercise `Bin-isomorphism` (stretch) {#Bin-isomorphism}
 
