@@ -575,6 +575,7 @@ yes a ⇔-dec no ¬b = no λ{ A⇔B → ¬b (_⇔_.to A⇔B a) }
 no ¬a ⇔-dec yes b = no λ{ A⇔B → ¬a (_⇔_.from A⇔B b) }
 no ¬a ⇔-dec no ¬b = yes (record { to = λ{ a → ⊥-elim (¬a a) } ; from = λ{ b → ⊥-elim (¬b b) } })
 
+-- cases here should match exactly the ⇔-dec definition for refl to pass
 iff-⇔ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ iff ⌊ y ⌋ ≡ ⌊ x ⇔-dec y ⌋
 iff-⇔ (yes x) (yes y) = refl
 iff-⇔ (yes x) (no y)  = refl
