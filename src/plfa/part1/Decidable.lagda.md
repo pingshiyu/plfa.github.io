@@ -365,6 +365,9 @@ from `_≤?_`, as we will now show.
 
 Erasure takes a decidable value to a boolean:
 ```agda
+-- evaluates Dec A into a boolean.
+-- useful for converting decidable version of functions into a normal haskell-like
+-- one
 ⌊_⌋ : ∀ {A : Set} → Dec A → Bool
 ⌊ yes x ⌋  =  true
 ⌊ no ¬x ⌋  =  false
@@ -426,6 +429,7 @@ decide their conjunction:
 ```agda
 infixr 6 _×-dec_
 
+-- conjunction of both sets (decidable if both is decidable)
 _×-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A × B)
 yes x ×-dec yes y = yes ⟨ x , y ⟩
 no ¬x ×-dec _     = no λ{ ⟨ x , y ⟩ → ¬x x }
@@ -560,14 +564,22 @@ Give analogues of the `_⇔_` operation from
 Chapter [Isomorphism](/Isomorphism/#iff),
 operation on booleans and decidables, and also show the corresponding erasure:
 ```agda
-postulate
-  _iff_ : Bool → Bool → Bool
-  _⇔-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A ⇔ B)
-  iff-⇔ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ iff ⌊ y ⌋ ≡ ⌊ x ⇔-dec y ⌋
-```
+_iff_ : Bool → Bool → Bool
+true iff b2 = b2
+false iff true = false
+false iff false = true
 
-```agda
--- Your code goes here
+_⇔-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A ⇔ B)
+yes a ⇔-dec yes b = yes (record { to = λ{ _ → b } ; from = λ{ _ → a } })
+yes a ⇔-dec no ¬b = no λ{ A⇔B → ¬b (_⇔_.to A⇔B a) }
+no ¬a ⇔-dec yes b = no λ{ A⇔B → ¬a (_⇔_.from A⇔B b) }
+no ¬a ⇔-dec no ¬b = yes (record { to = λ{ a → ⊥-elim (¬a a) } ; from = λ{ b → ⊥-elim (¬b b) } })
+
+iff-⇔ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ iff ⌊ y ⌋ ≡ ⌊ x ⇔-dec y ⌋
+iff-⇔ (yes x) (yes y) = refl
+iff-⇔ (yes x) (no y)  = refl
+iff-⇔ (no x)  (yes y) = refl
+iff-⇔ (no x)  (no y)  = refl
 ```
 
 ## Proof by reflection {#proof-by-reflection}
@@ -686,4 +698,4 @@ import Relation.Binary using (Decidable)
     ᵇ  U+1D47  MODIFIER LETTER SMALL B  (\^b)
     ⌊  U+230A  LEFT FLOOR (\clL)
     ⌋  U+230B  RIGHT FLOOR (\clR)
- 
+  
