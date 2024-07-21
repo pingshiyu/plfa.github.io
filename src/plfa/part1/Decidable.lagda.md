@@ -593,6 +593,7 @@ could have defined a *guarded* version of minus, a function which subtracts `n`
 from `m` only if `n ≤ m`:
 
 ```agda
+-- m - n with proof that n ≤ m
 minus : (m n : ℕ) (n≤m : n ≤ m) → ℕ
 minus m       zero    _         = m
 minus (suc m) (suc n) (s≤s n≤m) = minus m n n≤m
