@@ -27,6 +27,7 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Function using (_∘_)
 open import Level using (Level)
 open import plfa.part1.Isomorphism using (_≃_; _⇔_)
+open import plfa.part1.Negation using (¬-elim)
 ```
 
 
@@ -1067,7 +1068,29 @@ If so, prove; if not, explain why.
 
 
 ```agda
--- Your code goes here
+¬Any⇔All¬ : ∀ {A : Set} {P : A → Set} (xs : List A) 
+  → (¬_ ∘ Any P) xs ⇔ All (¬_ ∘ P) xs
+¬Any⇔All¬ xs = 
+  record
+  { to = to xs -- λ{ here px → ? ; there any_P_xss → ? }
+  ; from = from xs
+  }
+  where 
+  -- ¬P-evidence : ∀ {A : Set} {P : A → Set} {x : A} (xs : List A) 
+  --   → (¬_ ∘ Any P) xs → (x ∈ xs) → ¬ (P x)
+  -- ¬P-evidence {x} (y ∷ xs) ¬_Any_P (here ≡x) = {!   !} -- λ{ Px → (¬_Any_P (here Px)) }
+  to : ∀ {A : Set} {P : A → Set} (xs : List A) 
+    → (¬_ ∘ Any P) xs → All (¬_ ∘ P) xs
+  to [] ¬_Any_P_[] = []
+  to {A} {P} (x ∷ xs) ¬_Any_P_x∷xs = (λ{ Px → ¬_Any_P_x∷xs (here Px) }) ∷ (to xs (λ{ Any_P_xs → ¬_Any_P_x∷xs (there Any_P_xs) })) 
+
+  from : ∀ {A : Set} {P : A → Set} (xs : List A) 
+    → All (¬_ ∘ P) xs → (¬_ ∘ Any P) xs
+  from [] [] ()
+  from (x ∷ xs) (¬Px ∷ All_¬P_xs) = λ{ (here Px) → ¬-elim ¬Px Px ; (there Any_P_xs) → ¬-elim (from xs All_¬P_xs) Any_P_xs }
+
+-- with (¬_ ∘ All P) xs, the empty list case don't hold:
+-- it is not possible to construct Any (¬_ ∘ P) []
 ```
 
 #### Exercise `¬Any≃All¬` (stretch)
