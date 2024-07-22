@@ -23,6 +23,7 @@ open import Data.Nat.Properties using
   (+-assoc; +-identityˡ; +-identityʳ; *-assoc; *-identityˡ; *-identityʳ; *-distribʳ-+)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Data.Product using (_×_; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
+open import Data.Sum using (_⊎_; inj₁; inj₂) 
 open import Function using (_∘_)
 open import Level using (Level)
 open import plfa.part1.Isomorphism using (_≃_; _⇔_)
@@ -681,20 +682,34 @@ For example:
     product [ 1 , 2 , 3 , 4 ] ≡ 24
 
 ```agda
--- Your code goes here
+product : List ℕ → ℕ
+product = foldr _*_ 1
 ```
 
 #### Exercise `foldr-++` (recommended)
 
 Show that fold and append are related as follows:
 ```agda
-postulate
-  foldr-++ : ∀ {A B : Set} (_⊗_ : A → B → B) (e : B) (xs ys : List A) →
-    foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
-```
-
-```agda
--- Your code goes here
+foldr-++ : ∀ {A B : Set} (_⊗_ : A → B → B) (e : B) (xs ys : List A) →
+  foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
+foldr-++ _⊗_ e [] ys = 
+  begin
+    foldr _⊗_ e ([] ++ ys) 
+  ≡⟨⟩
+    foldr _⊗_ e ys
+  ≡⟨⟩
+    foldr _⊗_ (foldr _⊗_ e ys) []
+  ∎
+foldr-++ _⊗_ e (x ∷ xs) ys =
+  begin
+    foldr _⊗_ e (x ∷ xs ++ ys)
+  ≡⟨⟩
+    x ⊗ (foldr _⊗_ e (xs ++ ys))
+  ≡⟨ cong (x ⊗_) (foldr-++ _⊗_ e xs ys) ⟩
+    x ⊗ (foldr _⊗_ (foldr _⊗_ e ys) xs)
+  ≡⟨⟩
+    foldr _⊗_ (foldr _⊗_ e ys) (x ∷ xs)
+  ∎
 ```
 
 #### Exercise `foldr-∷` (practice)
@@ -905,6 +920,7 @@ than or equal to two.  Recall that `z≤n` proves `zero ≤ n` for any
 suc n`, for any `m` and `n`:
 ```agda
 _ : All (_≤ 2) [ 0 , 1 , 2 ]
+-- list of proofs that the element is smaller than 2
 _ = z≤n ∷ s≤s z≤n ∷ s≤s (s≤s z≤n) ∷ []
 ```
 Here `_∷_` and `[]` are the constructors of `All P` rather than of `List A`.
@@ -951,6 +967,7 @@ _ = there (there (here refl))
 Further, we can demonstrate that three is not in the list, because
 any possible proof that it is in the list leads to contradiction:
 ```agda
+-- any possible proof that 3 is in the list should lead to contradition 
 not-in : 3 ∉ [ 0 , 1 , 0 , 2 ]
 not-in (here ())
 not-in (there (here ()))
@@ -995,7 +1012,33 @@ replacement for `_×_`.  As a consequence, demonstrate an equivalence relating
 `_∈_` and `_++_`.
 
 ```agda
--- Your code goes here
+Any-++-⇔ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
+  Any P (xs ++ ys) ⇔ (Any P xs ⊎ Any P ys)
+Any-++-⇔ xs ys =
+  record
+  { to = to xs ys
+  ; from = from xs ys
+  }
+  where
+  to : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
+    Any P (xs ++ ys) → (Any P xs ⊎ Any P ys)
+  to [] ys Any_P_[]++ys = inj₂ Any_P_[]++ys
+  to (x ∷ xs) ys (here Px) = inj₁ (here Px)
+  to (x ∷ xs) ys (there Any_P_xs++ys) with (to xs ys Any_P_xs++ys)
+  ...                                       | inj₁ Any_P_xs = inj₁ (there Any_P_xs)
+  ...                                       | inj₂ Any_P_ys = inj₂ Any_P_ys
+
+  from : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
+    (Any P xs ⊎ Any P ys) → Any P (xs ++ ys)
+  from (x ∷ xs) ys (inj₁ (here Px)) = here Px
+  from (x ∷ xs) ys (inj₁ (there Any_P_xs)) = there (from xs ys (inj₁ Any_P_xs)) 
+  from [] (y ∷ ys) (inj₂ (here Py)) = here Py
+  from [] (y ∷ ys) (inj₂ (there Any_P_ys)) = there (from [] ys (inj₂ Any_P_ys))
+  from (x ∷ xs) ys (inj₂ at_ys) = there (from xs ys (inj₂ at_ys))
+
+-- implies the following equivalence:
+∈-++ : ∀ {A : Set} {a : A} (xs ys : List A) → (a ∈ (xs ++ ys)) ⇔ (a ∈ xs ⊎ a ∈ ys)
+∈-++ xs ys = Any-++-⇔ xs ys
 ```
 
 #### Exercise `All-++-≃` (stretch)
@@ -1180,3 +1223,4 @@ This chapter uses the following unicode:
     ⊗  U+2297  CIRCLED TIMES  (\otimes, \ox)
     ∈  U+2208  ELEMENT OF  (\in)
     ∉  U+2209  NOT AN ELEMENT OF  (\inn, \notin)
+ 
