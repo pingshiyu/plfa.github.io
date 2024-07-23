@@ -1138,12 +1138,16 @@ a function of type `A → Set`, taking a value `x` of type `A` into evidence
 `P x` that a property holds for `x`.  Say that a predicate `P` is _decidable_
 if we have a function that for a given `x` can decide `P x`:
 ```agda
+-- for any x, you are able to decide if P x holds.
+-- P x is a result, so essentially if the predicate (P) can be run.
 Decidable : ∀ {A : Set} → (A → Set) → Set
 Decidable {A} P  =  ∀ (x : A) → Dec (P x)
 ```
 Then if predicate `P` is decidable, it is also decidable whether every
 element of a list satisfies the predicate:
 ```agda
+-- since the list is always going to be finite, thus is decidable. infinite
+-- lists cannot be constructed within `List`
 All? : ∀ {A : Set} {P : A → Set} → Decidable P → Decidable (All P)
 All? P? []                                 =  yes []
 All? P? (x ∷ xs) with P? x   | All? P? xs
