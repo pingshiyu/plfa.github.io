@@ -195,11 +195,11 @@ two natural numbers.  Your definition may use `plus` as
 defined earlier.
 
 ```agda
-mult : Term
-mult = μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+mul : Term
+mul = μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
         case ` "m"
           [zero⇒ `zero
-           |suc "m" ⇒ plus · ` "n" · (` "*" · ` "m" · ` "n")  ]
+            |suc "m" ⇒ plus · ` "n" · (` "*" · ` "m" · ` "n")  ]
 ```
 
 
@@ -211,7 +211,9 @@ definition may use `plusᶜ` as defined earlier (or may not
 — there are nice definitions both ways).
 
 ```agda
--- Your code goes here
+-- just repeat +n m times.
+mulᶜ : Term
+mulᶜ = ƛ "m" ⇒ ƛ "n" ⇒ ` "m" · (plusᶜ · ` "n")
 ```
 
 
