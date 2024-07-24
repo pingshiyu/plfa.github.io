@@ -104,8 +104,8 @@ Id : Set
 Id = String
 
 infix  5  ƛ_⇒_
-infix  5  μ_⇒_
-infixl 7  _·_
+infix  5  μ_⇒_ -- fix point operator, μ F ≡ x such that x = F x
+infixl 7  _·_   -- function application
 infix  8  `suc_
 infix  9  `_
 
@@ -136,7 +136,9 @@ plus : Term
 plus = μ "+" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
          case ` "m"
            [zero⇒ ` "n"
-           |suc "m" ⇒ `suc (` "+" · ` "m" · ` "n") ]
+           |suc "m" ⇒ `suc (` "+" · ` "m" · ` "n") ] 
+-- m and n are variables. + is a variable too. (i.e. a lambda term)
+-- why is the μ operator there? (fixpoint)?
 ```
 The recursive definition of addition is similar to our original
 definition of `_+_` for naturals, as given in
@@ -193,7 +195,11 @@ two natural numbers.  Your definition may use `plus` as
 defined earlier.
 
 ```agda
--- Your code goes here
+mult : Term
+mult = μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+        case ` "m"
+          [zero⇒ `zero
+           |suc "m" ⇒ plus · ` "n" · (` "*" · ` "m" · ` "n")  ]
 ```
 
 
