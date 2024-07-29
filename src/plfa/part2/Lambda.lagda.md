@@ -1349,7 +1349,7 @@ Construction of a type derivation may be done interactively.
 Start with the declaration:
 
     ⊢sucᶜ : ∅ ⊢ sucᶜ ⦂ `ℕ ⇒ `ℕ
-    ⊢sucᶜ = ?
+    ⊢sucᶜ = {!   !}
 
 Typing C-c C-l causes Agda to create a hole and tell us its expected type:
 
@@ -1493,7 +1493,19 @@ Using the term `mul` you defined earlier, write out the derivation
 showing that it is well typed.
 
 ```agda
--- Your code goes here
+-- mul : Term
+-- mul = μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+--         case ` "m"
+--           [zero⇒ `zero
+--             |suc "m" ⇒ plus · ` "n" · (` "*" · ` "m" · ` "n")  ]
+
+⊢mul : ∀ {Γ} → Γ ⊢ mul ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ
+⊢mul = ⊢μ (⊢ƛ (⊢ƛ (⊢case (⊢` ∋m₀) ⊢zero (⊢plus · (⊢` ∋n₀) · ((⊢` ∋*) · (⊢` ∋m₁) · (⊢` ∋n₀))))))
+  where 
+    ∋m₀ = S′ Z
+    ∋m₁ = Z
+    ∋n₀ = S′ Z
+    ∋* = S′ (S′ (S′ Z))
 ```
 
 
@@ -1524,9 +1536,10 @@ This chapter uses the following unicode:
     ∋  U+220B  CONTAINS AS MEMBER (\ni)
     ∅  U+2205  EMPTY SET (\0)
     ⊢  U+22A2  RIGHT TACK (\vdash or \|-)
-    ⦂  U+2982  Z NOTATION TYPE COLON (\:)
+    ⦂  U+2982  Z NOTATION TYPE COLON (\z:)
     😇  U+1F607  SMILING FACE WITH HALO
     😈  U+1F608  SMILING FACE WITH HORNS
 
 We compose reduction `—→` from an em dash `—` and an arrow `→`.
 Similarly for reflexive and transitive closure `—↠`.
+  
