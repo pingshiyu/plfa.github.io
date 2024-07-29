@@ -537,6 +537,9 @@ What is the result of the following substitution?
 3. `` (ƛ "y" ⇒ `zero · (ƛ "x" ⇒ ` "x")) ``
 4. `` (ƛ "y" ⇒ `zero · (ƛ "x" ⇒ `zero)) ``
 
+Proposed answer: 
+    
+    (ƛ "y" ⇒ `zero · (ƛ "x" ⇒ ` "x")) 
 
 #### Exercise `_[_:=_]′` (stretch)
 
@@ -607,6 +610,8 @@ Here are the rules formalised in Agda:
 ```agda
 infix 4 _—→_
 
+-- forall L, L′, M, which are terms
+
 data _—→_ : Term → Term → Set where
 
   ξ-·₁ : ∀ {L L′ M}
@@ -672,7 +677,8 @@ What does the following term step to?
 
     (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x")  —→  ???
 
-1.  `` (ƛ "x" ⇒ ` "x") ``
+1.  `` (ƛ "x" ⇒ ` "x") `` 
+↑ This should be the answer?
 2.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
 3.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
 
@@ -681,7 +687,8 @@ What does the following term step to?
     (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x")  —→  ???
 
 1.  `` (ƛ "x" ⇒ ` "x") ``
-2.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
+2.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") `` 
+↑ this should be the ansewr, since the LHS of the term gets evaluated to a value first
 3.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
 
 What does the following term step to?  (Where `twoᶜ` and `sucᶜ` are as
@@ -691,8 +698,16 @@ defined above.)
 
 1.  `` sucᶜ · (sucᶜ · `zero) ``
 2.  `` (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero ``
+↑ should be this, (twoᶜ · sucᶜ) gets evaluated first.
 3.  `` `zero ``
 
+```agda
+-- twoᶜ : Term
+-- twoᶜ =  ƛ "s" ⇒ ƛ "z" ⇒ ` "s" · (` "s" · ` "z")
+-- 
+-- sucᶜ : Term
+-- sucᶜ = ƛ "n" ⇒ `suc (` "n")
+```
 
 ## Reflexive and transitive closure
 
@@ -808,12 +823,17 @@ step and the bottom two stand for zero or more reduction
 steps it is called the diamond property. In symbols:
 
 ```agda
+-- confluence, aka consistency.
+-- all reductions lead to the same result.
+
 postulate
+-- multiple steps starting from L
   confluence : ∀ {L M N}
     → ((L —↠ M) × (L —↠ N))
       --------------------
     → ∃[ P ] ((M —↠ P) × (N —↠ P))
 
+-- single step starting from L
   diamond : ∀ {L M N}
     → ((L —→ M) × (L —→ N))
       --------------------
@@ -824,6 +844,7 @@ The reduction system studied in this chapter is deterministic.
 In symbols:
 
 ```agda
+-- deterministic => only one possible reduction (up to equality)
 postulate
   deterministic : ∀ {L M N}
     → L —→ M
@@ -996,6 +1017,14 @@ Thus:
   6. `` `ℕ ``
 
   Give more than one answer if appropriate.
+"s" would have type (a ⇒ b)
+from `` "s" . `zero `` we know a ≡ ℕ
+from `` "s" · (` "s" · `zero) `` we know b ≡ ℕ
+so "s" has type ``` (ℕ ⇒ ℕ) ``
+and ``  ` "s" · (` "s"  · `zero) `` has type ℕ
+and overall the term has type 
+  2. `` (ℕ ⇒ ℕ) ⇒ ℕ ``
+
 
 * What is the type of the following term?
 
@@ -1009,6 +1038,11 @@ Thus:
   6. `` `ℕ ``
 
   Give more than one answer if appropriate.
+"s" has type (a ⇒ b) since it was used in a function application
+from `` ` "s"  · `zero `` we know a ≡ `ℕ
+from `` ` "s" · (` "s"  · `zero) `` we know a ≡ b ≡ `ℕ
+so ` "s" has type (ℕ ⇒ ℕ)
+and so the expression has type `` (ℕ ⇒ ℕ) ⇒ ℕ ``
 
 
 ## Typing
@@ -1092,6 +1126,8 @@ data _∋_⦂_ : Context → Id → Type → Set where
       ------------------
     → Γ , x ⦂ A ∋ x ⦂ A
 
+
+  -- the first condition ̸≡ is so that the env is consistent
   S : ∀ {Γ x y A B}
     → x ≢ y
     → Γ ∋ x ⦂ A
@@ -1113,16 +1149,18 @@ _ : ∅ , "x" ⦂ `ℕ ⇒ `ℕ , "y" ⦂ `ℕ , "z" ⦂ `ℕ ∋ "x" ⦂ `ℕ �
 _ = S (λ()) (S (λ()) Z)
 ```
 
-Instead, we'll use a "smart constructor", which uses [proof by reflection](/Decidable/#proof-by-reflection) to check the inequality while type checking:
+Instead, we'll use a "smart constructor", which uses 
+[proof by reflection](/Decidable/#proof-by-reflection) to check 
+the inequality while type checking:
 
 ```agda
 S′ : ∀ {Γ x y A B}
-   → {x≢y : False (x ≟ y)}
+   → {x̸≡y : False (x ≟ y)}
    → Γ ∋ x ⦂ A
      ------------------
    → Γ , y ⦂ B ∋ x ⦂ A
 
-S′ {x≢y = x≢y} x = S (toWitnessFalse x≢y) x
+S′ {x̸≡y = x̸≡y} x = S (toWitnessFalse x̸≡y) x
 ```
 
 ### Typing judgment
@@ -1246,6 +1284,7 @@ we might take `Γ` to be `∅` and `A` to be `` `ℕ ``.
 
 Here is the above typing derivation formalised in Agda:
 ```agda
+-- that is, the church encoding of A as two
 Ch : Type → Type
 Ch A = (A ⇒ A) ⇒ A ⇒ A
 
@@ -1258,9 +1297,11 @@ Ch A = (A ⇒ A) ⇒ A ⇒ A
 
 Here are the typings corresponding to computing two plus two:
 ```agda
+-- two is in general derivable from the empty context
 ⊢two : ∀ {Γ} → Γ ⊢ two ⦂ `ℕ
 ⊢two = ⊢suc (⊢suc ⊢zero)
 
+-- general derivation for the type of `plus`. works for all contexts
 ⊢plus : ∀ {Γ} → Γ ⊢ plus ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ
 ⊢plus = ⊢μ (⊢ƛ (⊢ƛ (⊢case (⊢` ∋m) (⊢` ∋n)
          (⊢suc (⊢` ∋+ · ⊢` ∋m′ · ⊢` ∋n′)))))
@@ -1351,6 +1392,7 @@ will show how to use Agda to compute type derivations directly.
 The lookup relation `Γ ∋ x ⦂ A` is functional, in that for each `Γ` and `x`
 there is at most one `A` such that the judgment holds:
 ```agda
+-- note that this is only for variables `x`.
 ∋-functional : ∀ {Γ x A B} → Γ ∋ x ⦂ A → Γ ∋ x ⦂ B → A ≡ B
 ∋-functional Z        Z          =  refl
 ∋-functional Z        (S x≢ _)   =  ⊥-elim (x≢ refl)
@@ -1393,15 +1435,57 @@ For each of the following, give a type `A` for which it is derivable,
 or explain why there is no such `A`.
 
 1. `` ∅ , "y" ⦂ `ℕ ⇒ `ℕ , "x" ⦂ `ℕ ⊢ ` "y" · ` "x" ⦂ A ``
+A = ℕ
+
 2. `` ∅ , "y" ⦂ `ℕ ⇒ `ℕ , "x" ⦂ `ℕ ⊢ ` "x" · ` "y" ⦂ A ``
+A = ∅
+
 3. `` ∅ , "y" ⦂ `ℕ ⇒ `ℕ ⊢ ƛ "x" ⇒ ` "y" · ` "x" ⦂ A ``
+A = ℕ ⇒ ℕ
 
 For each of the following, give types `A`, `B`, and `C` for which it is derivable,
 or explain why there are no such types.
 
 1. `` ∅ , "x" ⦂ A ⊢ ` "x" · ` "x" ⦂ B ``
-2. `` ∅ , "x" ⦂ A , "y" ⦂ B ⊢ ƛ "z" ⇒ ` "x" · (` "y" · ` "z") ⦂ C ``
+A = X ⇒ X
+B = X
 
+` "x" · ` "x"
+means 
+X = X ⇒ X
+and so on...
+
+so no such type exists, as the equation X = X ⇒ X has no fixed point
+
+2. `` ∅ , "x" ⦂ A , "y" ⦂ B ⊢ ƛ "z" ⇒ ` "x" · (` "y" · ` "z") ⦂ C ``
+Suppose z has type Z
+then from
+  `` ` "y" · ` "z" ``
+y : B, B = Z ⇒ T₁
+
+from 
+  `` ` "x" · (` "y" · ` "z") ``
+x : A, A = T₁ ⇒ T₂
+
+And since the above is the expression in the lambda, 
+if C = Z ⇒ T₃ then
+  `` T₃ = T₂ ``
+so C = Z ⇒ T₂
+
+Overall,
+A = T₁ ⇒ T₂
+B = Z ⇒ T₁
+C = Z ⇒ T₂
+
+So this just gives the constraints for the types. Anything would work in place for 
+T₁, Z, and T₂
+
+i.e. 
+A = Bool ⇒ ℕ
+B = ℕ ⇒ Bool
+C = ℕ ⇒ ℕ
+
+But anything for Z, T₁, T₂ would do.
 
 #### Exercise `⊢mul` (recommended)
 
