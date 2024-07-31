@@ -29,6 +29,7 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Function using (_∘_)
 open import plfa.part1.Isomorphism
+open import plfa.part1.Negation using (¬-elim)
 open import plfa.part2.Lambda
 ```
 
@@ -168,7 +169,7 @@ reduction step.  However, this is not true in general.  The term
 is neither a value nor can take a reduction step. And if `` "s" ⦂ `ℕ ⇒ `ℕ ``
 then the term
 
-     ` "s" · `zero
+    ` "s" · `zero
 
 cannot reduce because we do not know which function is bound to the
 free variable `"s"`.  The first of these terms is ill typed, and the
@@ -544,7 +545,7 @@ we require an arbitrary context `Γ`, as in the statement of the lemma.
 Here is the formal statement and proof that substitution preserves types:
 ```agda
 subst : ∀ {Γ x N V A B}
-  → ∅ ⊢ V ⦂ A
+  → ∅ ⊢ V ⦂ A           -- V is a closed term
   → Γ , x ⦂ A ⊢ N ⦂ B
     --------------------
   → Γ ⊢ N [ x := V ] ⦂ B
@@ -890,7 +891,7 @@ reduction finished:
 ```agda
 data Steps (L : Term) : Set where
 
-  steps : ∀ {N}
+  steps : ∀ {N} -- N is a term
     → L —↠ N
     → Finished N
       ----------
@@ -1228,7 +1229,12 @@ above.
 Using the evaluator, confirm that two times two is four.
 
 ```agda
--- Your code goes here
+⊢2*2 : ∅ ⊢ mul · two · two ⦂ `ℕ
+⊢2*2 = ⊢mul · ⊢two · ⊢two
+
+-- evaluator gave very long results, but in the end it gave:
+-- (done (V-suc (V-suc (V-suc (V-suc V-zero)))))
+-- which is 4 indeed (suc suc suc suc zero)
 ```
 
 
@@ -1238,7 +1244,20 @@ Without peeking at their statements above, write down the progress
 and preservation theorems for the simply typed lambda-calculus.
 
 ```agda
--- Your code goes here
+-- progress: for all well typed terms, either there is a reduction step
+-- or it is a value
+postulate 
+  progress′′ : ∀ {Γ M A}
+    → Γ ⊢ M ⦂ A
+    → (Value M ⊎ ∃[ N ] M —→ N)
+
+-- preservation: for all well typed terms with a reduction, its next step
+-- has the same type.
+postulate
+  preservation′′ : ∀ {Γ M N A} 
+    → Γ ⊢ M ⦂ A 
+    → M —→ N
+    → Γ ⊢ N ⦂ A
 ```
 
 
@@ -1274,33 +1293,33 @@ Stuck M  =  Normal M × ¬ Value M
 
 Using progress, it is easy to show that no well-typed term is stuck:
 ```agda
-postulate
-  unstuck : ∀ {M A}
-    → ∅ ⊢ M ⦂ A
-      -----------
-    → ¬ (Stuck M)
+-- postulate
+--   unstuck : ∀ {M A}
+--     → ∅ ⊢ M ⦂ A
+--       -----------
+--     → ¬ (Stuck M)
 ```
 
 Using preservation, it is easy to show that after any number of steps,
 a well-typed term remains well typed:
 ```agda
-postulate
-  preserves : ∀ {M N A}
-    → ∅ ⊢ M ⦂ A
-    → M —↠ N
-      ---------
-    → ∅ ⊢ N ⦂ A
+-- postulate
+--   preserves : ∀ {M N A}
+--     → ∅ ⊢ M ⦂ A
+--     → M —↠ N
+--       ---------
+--     → ∅ ⊢ N ⦂ A
 ```
 
 An easy consequence is that starting from a well-typed term, taking
 any number of reduction steps leads to a term that is not stuck:
 ```agda
-postulate
-  wttdgs : ∀ {M N A}
-    → ∅ ⊢ M ⦂ A
-    → M —↠ N
-      -----------
-    → ¬ (Stuck N)
+-- postulate
+--   wttdgs : ∀ {M N A}
+--     → ∅ ⊢ M ⦂ A
+--     → M —↠ N
+--       -----------
+--     → ¬ (Stuck N)
 ```
 Felleisen and Wright, who introduced proofs via progress and
 preservation, summarised this result with the slogan _well-typed terms
@@ -1322,7 +1341,29 @@ Give an example of an ill-typed term that does get stuck.
 Provide proofs of the three postulates, `unstuck`, `preserves`, and `wttdgs` above.
 
 ```agda
--- Your code goes here
+unstuck : ∀ {M A}
+  → ∅ ⊢ M ⦂ A
+    -----------
+  → ¬ (Stuck M)
+unstuck ∅⊢M⦂A ⟨ ¬M—→N , ¬ValueM ⟩ with progress ∅⊢M⦂A
+...   | step M—→N   = ¬-elim ¬M—→N M—→N
+...   | done ValueM = ¬-elim ¬ValueM ValueM
+
+preserves : ∀ {M N A}
+  → ∅ ⊢ M ⦂ A
+  → M —↠ N
+    ---------
+  → ∅ ⊢ N ⦂ A
+preserves ∅⊢M⦂A (M ∎) = ∅⊢M⦂A
+preserves ∅⊢M⦂A (s —→⟨ s—→M ⟩ M—↠N) = 
+  preserves (preserve ∅⊢M⦂A s—→M) M—↠N
+
+wttdgs : ∀ {M N A}
+  → ∅ ⊢ M ⦂ A
+  → M —↠ N
+    -----------
+  → ¬ (Stuck N)
+wttdgs ∅⊢M⦂A M—↠N = unstuck (preserves ∅⊢M⦂A M—↠N) 
 ```
 
 ## Reduction is deterministic
