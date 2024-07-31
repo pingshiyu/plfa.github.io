@@ -1473,10 +1473,23 @@ the presence of these rules?  For each property, write either
 false, give a counterexample:
 
   - Determinism
+  Not true, 
+    `` (λ x → `suc x) · `zero ``
+  Can now reduce down to both:
+    `` `suc `zero ``
+  and 
+    `` zap ``
 
   - Progress
+  Remains true only if zap is a value. 
+  If it is not a value then zap is stuck, and any term can reduce down
+  to a stuck term at any point.
 
   - Preservation
+  Remains true. 
+  For any term that were ∅ ⊢ M ⦂ A, and M —→ N, 
+  either N ≠ zap, in which case the original preservation theorem applies,
+  or     N ≡ zap, in which case zap ⦂ A, and preservation still holds. 
 
 
 #### Quiz
@@ -1496,26 +1509,55 @@ the presence of this rule?  For each one, write either
 false, give a counterexample:
 
   - Determinism
+  No longer holds. The term:
+    `` (λ x ⇒ ` x) · `zero ``
+  now can reduce down to 
+    `` `zero ``
+  or to
+    `` foo · `zero ``
 
   - Progress
+  No longer holds, the above term
+    `` (λ x ⇒ ` x) · `zero ``
+  is well typed (⦂ ℕ ⇒ ℕ) and reduces to
+    `` foo · `zero ``
+  , then reduces to
+    `` `zero · `zero ``
+  , and is now stuck.
 
   - Preservation
+  No longer holds, the term 
+    `` (λ x ⇒ ` x) · `zero ``
+  is well typed (⦂ ℕ ⇒ ℕ), but reduces to
+    `` `zero · `zero ``
+  eventually, which has no type.
 
 
 #### Quiz
 
-Suppose instead that we remove the rule `ξ·₁` from the step
+Suppose instead that we remove the rule `ξ-·₁` from the step
 relation. Which of the following properties remain
 true in the absence of this rule?  For each one, write either
 "remains true" or else "becomes false." If a property becomes
 false, give a counterexample:
 
   - Determinism
+  Still holds, removing a rule only removes the possibilities 
+  that any given term can reduce to.
 
   - Progress
+  No longer holds, the term
+    `` (λ x ⇒ λ y ⇒ x) · `zero · (`suc `zero) ``
+  can no longer be reduced, as the LHS 
+    `` (λ x ⇒ λ y ⇒ x) · `zero ``
+  is not a value.
 
   - Preservation
-
+  Still holds. The original theorem still applies since the 
+  statement was: 
+    `` ∅ ⊢ M ⦂ A , M —→ N ⇒ N ⦂ A``
+  taking out the rule `ξ-·₁` only makes the —→ relation less
+  strong, but does not introduce any new —→ relations.
 
 #### Quiz
 
@@ -1542,14 +1584,42 @@ the presence of these rules?  For each one, write either
 "remains true" or else "becomes false." If a property becomes
 false, give a counterexample:
 
+So now, the natural numbers can be applied to each other, i.e.
+the term `` (`suc `zero) · `zero ``.
+Values consists of naturals, and lambda abstractions.
+
   - Determinism
+  Naturals being applied to naturals did not appear in the old 
+  system, and is newly introduced here. Those terms used to be
+  ill-typed, but now has type ℕ. 
+  Determinism still holds since the ill typed terms only have 
+  one possible reduction.
 
   - Progress
+  Since the new rule now makes applications of natural numbers
+  well-typed, we need to show that applying natural numbers also
+  lead to progress. And that the interactions with existing features
+  also keep progress.
+  Care to be taken in this case:
+    `` (`suc `zero) · λ x ⇒ x · `zero ``
+  Reduction proceeds first with LHS. The LHS is not a value and so
+  this term is actually stuck. However, this term is well-typed,
+  because LHS has type ℕ and so does the RHS (reduces down to ℕ)
+  So prorgess doesn't hold.
 
   - Preservation
+  Preservation still holds, because we are only making more terms 
+  well-typed, and the reduction rule also doesn't alter the type 
+  (new term has the same type as the old term under the new evaluation
+  step).
 
 Are all properties preserved in this case? Are there any
 other alterations we would wish to make to the system?
+
+We probably would want to change the lambda application rule? To make it
+so that we don't only evaluate the LHS first, to prevent the terms in the 
+progress counterexample from being stuck. Maybe we want to do such that 
+either LHS or RHS of the application can be evaluated in any order.
 
 ## Unicode
 
