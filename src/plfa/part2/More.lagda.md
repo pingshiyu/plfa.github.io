@@ -570,6 +570,7 @@ infixl 5 _,_
 
 infixr 7 _⇒_
 infixr 9 _`×_
+infixr 9 _`⊎_
 
 infix  5 ƛ_
 infix  5 μ_
@@ -586,9 +587,11 @@ infix  9 #_
 ```agda
 data Type : Set where
   `ℕ    : Type
+  `⊥    : Type -- new
   _⇒_   : Type → Type → Type
   Nat   : Type
   _`×_  : Type → Type → Type
+  _`⊎_  : Type → Type → Type -- new
 ```
 
 ### Contexts
@@ -711,6 +714,31 @@ data _⊢_ : Context → Type → Set where
       --------------
     → Γ ⊢ C
 
+-- begin
+  -- sums
+  `inj₁ : ∀ {Γ A B}
+    → Γ ⊢ A
+      -----------
+    → Γ ⊢ A `⊎ B
+
+  `inj₂ : ∀ {Γ A B}
+    → Γ ⊢ B
+      -----------
+    → Γ ⊢ A `⊎ B
+
+  case⊎ : ∀ {Γ A B C}
+    → Γ ⊢ A `⊎ B
+    → Γ , A ⊢ C
+    → Γ , B ⊢ C
+      -----------
+    → Γ ⊢ C
+  
+  -- empty
+  case⊥ : ∀ {Γ A}
+    → Γ ⊢ `⊥
+      -------
+    → Γ ⊢ A
+-- end
 ```
 
 ### Abbreviating de Bruijn indices
@@ -764,12 +792,20 @@ rename ρ `⟨ M , N ⟩     =  `⟨ rename ρ M , rename ρ N ⟩
 rename ρ (`proj₁ L)     =  `proj₁ (rename ρ L)
 rename ρ (`proj₂ L)     =  `proj₂ (rename ρ L)
 rename ρ (case× L M)    =  case× (rename ρ L) (rename (ext (ext ρ)) M)
+-- begin
+rename ρ (`inj₁ L)      = `inj₁ (rename ρ L)
+rename ρ (`inj₂ L)      = `inj₂ (rename ρ L)
+rename ρ (case⊎ L M N)  = case⊎ (rename ρ L) (rename (ext ρ) M) (rename (ext ρ) N)
+rename ρ (case⊥ L)      = case⊥ (rename ρ L)
+-- end
 ```
 
 ## Simultaneous Substitution
 
 ```agda
-exts : ∀ {Γ Δ} → (∀ {A} → Γ ∋ A → Δ ⊢ A) → (∀ {A B} → Γ , A ∋ B → Δ , A ⊢ B)
+exts : ∀ {Γ Δ} 
+  → (∀ {A}   →     Γ ∋ A →     Δ ⊢ A) -- a substitution of A for a term 
+  → (∀ {A B} → Γ , A ∋ B → Δ , A ⊢ B) -- a substituion of A for a term (extended env with A')
 exts σ Z      =  ` Z
 exts σ (S x)  =  rename S_ (σ x)
 
@@ -788,6 +824,12 @@ subst σ `⟨ M , N ⟩     =  `⟨ subst σ M , subst σ N ⟩
 subst σ (`proj₁ L)     =  `proj₁ (subst σ L)
 subst σ (`proj₂ L)     =  `proj₂ (subst σ L)
 subst σ (case× L M)    =  case× (subst σ L) (subst (exts (exts σ)) M)
+-- begin
+subst σ (`inj₁ L)      =  `inj₁ (subst σ L)
+subst σ (`inj₂ L)      =  `inj₂ (subst σ L)
+subst σ (case⊎ L M N)  =  case⊎ (subst σ L) (subst (exts σ) M) (subst (exts σ) N)
+subst σ (case⊥ L)      =  case⊥ (subst σ L)
+-- end
 ```
 
 ## Single and double substitution
@@ -805,11 +847,11 @@ _[_] {Γ} {A} {B} N M =  subst {Γ , B} {Γ} σ {A} N
   σ (S x)  =  ` x
 
 _[_][_] : ∀ {Γ A B C}
-  → Γ , A , B ⊢ C
-  → Γ ⊢ A
-  → Γ ⊢ B
+  → Γ , A , B ⊢ C -- Γ, and variables of type A, B types a term as : C
+  → Γ ⊢ A         -- a term of type A 
+  → Γ ⊢ B         -- a term of type B
     -------------
-  → Γ ⊢ C
+  → Γ ⊢ C         -- subsitute the two terms for the variables in the : C term
 _[_][_] {Γ} {A} {B} N V W =  subst {Γ , A , B} {Γ} σ N
   where
   σ : ∀ {C} → Γ , A , B ∋ C → Γ ⊢ C
@@ -853,6 +895,19 @@ data Value : ∀ {Γ A} → Γ ⊢ A → Set where
     → Value W
       ----------------
     → Value `⟨ V , W ⟩
+
+-- begin
+  -- sums
+  V-inj₁ : ∀ {Γ A B} {V : Γ ⊢ A}
+    → Value {Γ} {A} V
+      ---------------
+    → Value {Γ} {A `⊎ B} (`inj₁ V)
+
+  V-inj₂ : ∀ {Γ A B} {V : Γ ⊢ B}
+    → Value {Γ} {B} V
+      ---------------
+    → Value {Γ} {A `⊎ B} (`inj₂ V)
+-- end
 ```
 
 Implicit arguments need to be supplied when they are
@@ -987,6 +1042,39 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       ----------------------------------
     → case× `⟨ V , W ⟩ M —→ M [ V ][ W ]
 
+-- begin
+  -- sums
+  ξ-inj₁ : ∀ {Γ A B} {M M′ : Γ ⊢ A}
+    → M —→ M′
+      -------------------------------------------
+    → `inj₁ {Γ} {A} {B} M —→ `inj₁ {Γ} {A} {B} M′
+  
+  ξ-inj₂ : ∀ {Γ A B} {N N′ : Γ ⊢ B}
+    → N —→ N′
+      -------------------------------------------
+    → `inj₂ {Γ} {A} {B} N —→ `inj₂ {Γ} {A} {B} N′
+
+  β-inj₁ : ∀ {Γ A B C} {V : Γ ⊢ A} {M : Γ , A ⊢ C} {N : Γ , B ⊢ C}
+    → Value V
+      ------------------------------
+    → case⊎ (`inj₁ V) M N —→ M [ V ]
+
+  β-inj₂ : ∀ {Γ A B C} {V : Γ ⊢ B} {M : Γ , A ⊢ C} {N : Γ , B ⊢ C}
+    → Value V
+      ------------------------------
+    → case⊎ (`inj₂ V) M N —→ N [ V ]
+
+  ξ-case⊎ : ∀ {Γ A B C} {L L′ : Γ ⊢ A `⊎ B} {M : Γ , A ⊢ C} {N : Γ , B ⊢ C}
+    → L —→ L′
+      ----------------------------
+    → case⊎ L M N —→ case⊎ L′ M N
+  
+  -- void 
+  ξ-case⊥ : ∀ {Γ A} {L L′ : Γ ⊢ `⊥} 
+    → L —→ L′
+      -----------------------------------
+    → case⊥ {Γ} {A} L —→ case⊥ {Γ} {A} L′
+-- end
 ```
 
 ## Reflexive and transitive closure
@@ -1032,6 +1120,15 @@ V¬—→ (V-suc VM)   (ξ-suc M—→M′)     =  V¬—→ VM M—→M′
 V¬—→ V-con        ()
 V¬—→ V-⟨ VM , _ ⟩ (ξ-⟨,⟩₁ M—→M′)    =  V¬—→ VM M—→M′
 V¬—→ V-⟨ _ , VN ⟩ (ξ-⟨,⟩₂ _ N—→N′)  =  V¬—→ VN N—→N′
+V¬—→ (V-inj₁ VM) (ξ-inj₁ M—→M′)     = V¬—→ VM M—→M′
+V¬—→ (V-inj₂ VN) (ξ-inj₂ N—→N′)     = V¬—→ VN N—→N′
+-- begin
+-- suppose inj₁ VM reduces. 
+-- Then there is a reduction ξ-inj₁ that reduces `inj₁ VM
+-- (This is the only possible reduction for a term of shape `inj₁ _)
+-- reducing ξ-inj₁ requires a reduction for VM
+-- but this causes a contradiction, as by IH VM doesn't reduce.
+-- end
 ```
 
 
@@ -1093,6 +1190,22 @@ progress (`proj₂ L) with progress L
 progress (case× L M) with progress L
 ...    | step L—→L′                         =  step (ξ-case× L—→L′)
 ...    | done (V-⟨ VM , VN ⟩)               =  step (β-case× VM VN)
+-- begin
+progress (`inj₁ M) with progress M
+...    | step M—→M′                         = step (ξ-inj₁ M—→M′)
+...    | done VM                            = done (V-inj₁ VM)
+progress (`inj₂ M) with progress M
+...    | step M—→M′                         = step (ξ-inj₂ M—→M′)
+...    | done VM                            = done (V-inj₂ VM)
+progress (case⊎ L M N) with progress L 
+...    | step L—→L′                         = step (ξ-case⊎ L—→L′)
+...    | done (V-inj₁ VM)                   = step (β-inj₁ VM)
+...    | done (V-inj₂ VM)                   = step (β-inj₂ VM)
+progress (case⊥ L) with progress L
+...    | step L—→L′                         = step (ξ-case⊥ L—→L′)
+-- cannot evaluate to a value, since L would then become ⊥, and we
+-- don't have a value for ⊥.
+-- end
 ```
 
 
