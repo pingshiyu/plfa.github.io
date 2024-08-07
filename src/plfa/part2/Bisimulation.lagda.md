@@ -33,6 +33,7 @@ then `M† —↠ N†` and `N ~ N†`
 for some `N†`.
 
 Or, in a diagram:
+i.e. giving a point where they are equivalent
 
     M  --- —→ --- N
     |             |
@@ -65,6 +66,8 @@ _bisimulation_.  (In general, if < and > are arbitrary relations such
 that `x < y` if and only if `y > x` then we say that `<` and `>` are
 _converse_ relations. Hence, if `~` is a relation from source to target,
 its converse is a relation from target to source.)
+
+Simulation: _with_ some other constructs
 
 Simulation is established by case analysis over all possible
 reductions and all possible terms to which they are related.  For each
@@ -222,6 +225,8 @@ That is, if `ρ` maps any judgment `Γ ∋ A` to a judgment `Δ ∋ A`,
 and if `M ~ M†` then `rename ρ M ~ rename ρ M†`:
 
 ```agda
+-- note both terms M and M† are evaluated in the same environment
+-- not surprising, since the variables are kept identical
 ~rename : ∀ {Γ Δ}
   → (ρ : ∀ {A} → Γ ∋ A → Δ ∋ A)
     ----------------------------------------------------------
@@ -250,11 +255,11 @@ then for any `x` in `Γ , B ∋ A` we have `exts σ x ~ exts σ† x`:
 ~exts : ∀ {Γ Δ}
   → {σ  : ∀ {A} → Γ ∋ A → Δ ⊢ A}
   → {σ† : ∀ {A} → Γ ∋ A → Δ ⊢ A}
-  → (∀ {A} → (x : Γ ∋ A) → σ x ~ σ† x)
+  → (∀ {A} → (x : Γ ∋ A) → σ x ~ σ† x) -- σ and σ† images bisimulates
     --------------------------------------------------
   → (∀ {A B} → (x : Γ , B ∋ A) → exts σ x ~ exts σ† x)
-~exts ~σ Z      =  ~`
-~exts ~σ (S x)  =  ~rename S_ (~σ x)
+~exts ~σ Z      =  ~` -- is : B 
+~exts ~σ (S x)  =  ~rename S_ (~σ x) -- is in Γ
 ```
 The structure of the proof is similar to the structure of extension itself.
 The newly introduced variable trivially relates to itself, and otherwise
@@ -262,15 +267,15 @@ we apply renaming to the hypothesis.
 
 With extension under our belts, it is straightforward to show
 substitution commutes.  If `σ` and `σ†` both map any judgment `Γ ∋ A`
-to a judgment `Δ ⊢ A`, such that for every `x` in `Γ ∋ A` we have `σ
-x ~ σ† x`, and if `M ~ M†`, then `subst σ M ~ subst σ† M†`:
+to a judgment `Δ ⊢ A`, such that for every `x` in `Γ ∋ A` we have 
+`σ x ~ σ† x`, and if `M ~ M†`, then `subst σ M ~ subst σ† M†`:
 ```agda
 ~subst : ∀ {Γ Δ}
   → {σ  : ∀ {A} → Γ ∋ A → Δ ⊢ A}
   → {σ† : ∀ {A} → Γ ∋ A → Δ ⊢ A}
-  → (∀ {A} → (x : Γ ∋ A) → σ x ~ σ† x)
+  → (∀ {A} → (x : Γ ∋ A) → σ x ~ σ† x) -- maintains bisimulation of all variables
     ---------------------------------------------------------
-  → (∀ {A} {M M† : Γ ⊢ A} → M ~ M† → subst σ M ~ subst σ† M†)
+  → (∀ {A} {M M† : Γ ⊢ A} → M ~ M† → subst σ M ~ subst σ† M†) -- maintains bisimulation of all terms
 ~subst ~σ (~` {x = x})  =  ~σ x
 ~subst ~σ (~ƛ ~N)       =  ~ƛ (~subst (~exts ~σ) ~N)
 ~subst ~σ (~L ~· ~M)    =  (~subst ~σ ~L) ~· (~subst ~σ ~M)
@@ -325,7 +330,7 @@ of the diagram, that is, its right and bottom edges:
 ```agda
 data Leg {Γ A} (M† N : Γ ⊢ A) : Set where
 
-  leg : ∀ {N† : Γ ⊢ A}
+  leg : ∀ {N† : Γ ⊢ A} -- leg to represent existence of an N†
     → N ~ N†
     → M† —→ N†
       --------
@@ -338,7 +343,7 @@ We can now state and prove that the relation is a simulation.
 Again, in this case, we can use a stronger relation than
 `—↠`, replacing it by `—→`:
 ```agda
-sim : ∀ {Γ A} {M M† N : Γ ⊢ A}
+sim : ∀ {Γ A} {M M† N : Γ ⊢ A} 
   → M ~ M†
   → M —→ N
     ---------
