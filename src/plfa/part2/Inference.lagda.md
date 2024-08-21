@@ -73,6 +73,11 @@ type in the input context. For the second rule, the inputs of the
 conclusion determine the inputs of the hypothesis, and the output
 of the hypothesis determines the output of the conclusion.
 
+```agda
+-- inputs/outputs as in, 
+--  inputs are what you know in an algorithm
+--  outputs are what you want to calculate in an algorithm
+```
 For the judgment
 
     Γ ⊢ M ⦂ A
@@ -300,6 +305,7 @@ Id = String
 data Type : Set where
   `ℕ    : Type
   _⇒_   : Type → Type → Type
+  _`×_  : Type → Type → Type
 
 data Context : Set where
   ∅     : Context
@@ -315,11 +321,16 @@ Note the inclusion of the switching forms,
 data Term⁺ : Set
 data Term⁻ : Set
 
+-- term⁺ are types that have been specified
 data Term⁺ where
   `_                       : Id → Term⁺
   _·_                      : Term⁺ → Term⁻ → Term⁺
+  `⟨_,_⟩                    : Term⁺ → Term⁺ → Term⁺
+  `proj₁_                  : Term⁺ → Term⁺
+  `proj₂_                  : Term⁺ → Term⁺
   _↓_                      : Term⁻ → Type → Term⁺
 
+-- term⁻ are types that need to be inferred
 data Term⁻ where
   ƛ_⇒_                     : Id → Term⁻ → Term⁻
   `zero                    : Term⁻
@@ -413,6 +424,22 @@ data _⊢_↑_ where
       -------------
     → Γ ⊢ L · M ↑ B
 
+  ⊢× : ∀ {Γ L M A B}
+    → Γ ⊢ M ↑ A
+    → Γ ⊢ L ↑ B
+      ----------
+    → Γ ⊢ `⟨ M , L ⟩ ↑ A `× B
+
+  ⊢proj₁ : ∀ {Γ L A B}
+    → Γ ⊢ L ↑ A `× B
+      ---------------
+    → Γ ⊢ `proj₁ L ↑ A
+  
+  ⊢proj₂ : ∀ {Γ L A B}
+    → Γ ⊢ L ↑ A `× B
+      ---------------
+    → Γ ⊢ `proj₂ L ↑ B
+
   ⊢↓ : ∀ {Γ M A}
     → Γ ⊢ M ↓ A
       ---------------
@@ -474,7 +501,27 @@ Rewrite your definition of multiplication from
 Chapter [Lambda](/Lambda/), decorated to support inference.
 
 ```agda
--- Your code goes here
+{-
+data Term⁺ where
+  `_                       : Id → Term⁺
+  _·_                      : Term⁺ → Term⁻ → Term⁺
+  _↓_                      : Term⁻ → Type → Term⁺
+
+-- term⁻ are types that need to be inferred
+data Term⁻ where
+  ƛ_⇒_                     : Id → Term⁻ → Term⁻
+  `zero                    : Term⁻
+  `suc_                    : Term⁻ → Term⁻
+  `case_[zero⇒_|suc_⇒_]    : Term⁺ → Term⁻ → Id → Term⁻ → Term⁻
+  μ_⇒_                     : Id → Term⁻ → Term⁻
+  _↑                       : Term⁺ → Term⁻
+-}
+
+mul⁺ : Term⁺
+mul⁺ = (μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+          `case (` "m") [zero⇒ `zero
+                        |suc "m" ⇒ plus · (` "n" ↑) · (` "*" · (` "m" ↑) · (` "n" ↑) ↑) ↑ ])
+            ↓ (`ℕ ⇒ `ℕ ⇒ `ℕ)
 ```
 
 
@@ -485,6 +532,7 @@ Chapter [More](/More/).
 
 ```agda
 -- Your code goes here
+-- modifications above.
 ```
 
 
@@ -505,9 +553,18 @@ are equal.  It is straightforward to code:
 ```agda
 _≟Tp_ : (A B : Type) → Dec (A ≡ B)
 `ℕ      ≟Tp `ℕ              =  yes refl
+`ℕ      ≟Tp (A `× B)        =  no λ()
 `ℕ      ≟Tp (A ⇒ B)         =  no λ()
 (A ⇒ B) ≟Tp `ℕ              =  no λ()
+(A ⇒ B) ≟Tp (A′ `× B′)      =  no λ()
 (A ⇒ B) ≟Tp (A′ ⇒ B′)
+  with A ≟Tp A′ | B ≟Tp B′
+...  | no A≢    | _         =  no λ{refl → A≢ refl}
+...  | yes _    | no B≢     =  no λ{refl → B≢ refl}
+...  | yes refl | yes refl  =  yes refl
+(A `× B) ≟Tp `ℕ            = no λ()
+(A `× B) ≟Tp (A′ ⇒ B′)     = no λ()
+(A `× B) ≟Tp (A′ `× B′)
   with A ≟Tp A′ | B ≟Tp B′
 ...  | no A≢    | _         =  no λ{refl → A≢ refl}
 ...  | yes _    | no B≢     =  no λ{refl → B≢ refl}
@@ -557,10 +614,23 @@ Synthesizing a type is also unique.  Given two derivations,
 one showing `Γ ⊢ M ↑ A` and one showing `Γ ⊢ M ↑ B`, it follows
 that `A` and `B` must be identical:
 ```agda
+pair≡ : ∀ {A B A′ B′} 
+  → A ≡ A′
+  → B ≡ B′ 
+  → (A `× B) ≡ (A′ `× B′)
+pair≡ refl refl = refl
+
 uniq-↑ : ∀ {Γ M A B} → Γ ⊢ M ↑ A → Γ ⊢ M ↑ B → A ≡ B
-uniq-↑ (⊢` ∋x) (⊢` ∋x′)       =  uniq-∋ ∋x ∋x′
-uniq-↑ (⊢L · ⊢M) (⊢L′ · ⊢M′)  =  rng≡ (uniq-↑ ⊢L ⊢L′)
-uniq-↑ (⊢↓ ⊢M) (⊢↓ ⊢M′)       =  refl
+uniq-↑ (⊢` ∋x) (⊢` ∋x′)               =  uniq-∋ ∋x ∋x′
+uniq-↑ (⊢L · ⊢M) (⊢L′ · ⊢M′)          =  rng≡ (uniq-↑ ⊢L ⊢L′)
+uniq-↑ (⊢↓ ⊢M) (⊢↓ ⊢M′)               =  refl
+uniq-↑ (⊢× ⊢A ⊢B) (⊢× ⊢A′ ⊢B′)        =  pair≡ (uniq-↑ ⊢A ⊢A′) (uniq-↑ ⊢B ⊢B′)
+uniq-↑ (⊢proj₁ ⊢A×B) (⊢proj₁ ⊢A′×B′)
+  with (uniq-↑ ⊢A×B ⊢A′×B′)
+...   | refl = refl
+uniq-↑ (⊢proj₂ ⊢A×B) (⊢proj₂ ⊢A′×B′)
+  with (uniq-↑ ⊢A×B ⊢A′×B′)
+...   | refl = refl
 ```
 There are three possibilities for the term. If it is a variable,
 uniqueness of synthesis follows from uniqueness of lookup.
@@ -694,18 +764,42 @@ inherit : ∀ (Γ : Context) (M : Term⁻) (A : Type)
 
 We first consider the code for synthesis:
 ```agda
+ℕ̸≡× : ∀ {A B} 
+  → `ℕ ≢  A `× B
+ℕ̸≡× ()
+
+⇒≢× : ∀ {A B A′ B′}
+  → A ⇒ B ≢  A′ `× B′
+⇒≢× ()
+
 synthesize Γ (` x) with lookup Γ x
 ... | no  ¬∃              =  no  (λ{ ⟨ A , ⊢` ∋x ⟩ → ¬∃ ⟨ A , ∋x ⟩ })
 ... | yes ⟨ A , ∋x ⟩      =  yes ⟨ A , ⊢` ∋x ⟩
 synthesize Γ (L · M) with synthesize Γ L
 ... | no  ¬∃              =  no  (λ{ ⟨ _ , ⊢L  · _  ⟩  →  ¬∃ ⟨ _ , ⊢L ⟩ })
 ... | yes ⟨ `ℕ ,    ⊢L ⟩  =  no  (λ{ ⟨ _ , ⊢L′ · _  ⟩  →  ℕ≢⇒ (uniq-↑ ⊢L ⊢L′) })
+... | yes ⟨ A `× B , ⊢L ⟩ = no  (λ{ ⟨ _ , ⊢L′ · _  ⟩  →  ⇒≢× (uniq-↑ ⊢L′ ⊢L) })
 ... | yes ⟨ A ⇒ B , ⊢L ⟩ with inherit Γ M A
 ...    | no  ¬⊢M          =  no  (¬arg ⊢L ¬⊢M)
 ...    | yes ⊢M           =  yes ⟨ B , ⊢L · ⊢M ⟩
 synthesize Γ (M ↓ A) with inherit Γ M A
 ... | no  ¬⊢M             =  no  (λ{ ⟨ _ , ⊢↓ ⊢M ⟩  →  ¬⊢M ⊢M })
 ... | yes ⊢M              =  yes ⟨ A , ⊢↓ ⊢M ⟩
+synthesize Γ `⟨ M₁ , M₂ ⟩ 
+  with (synthesize Γ M₁) | (synthesize Γ M₂)
+... | no ¬⊢M₁          | _               = no (λ{ ⟨ A `× B , ⊢× ⊢M₁ _ ⟩ → ¬⊢M₁ ⟨ A , ⊢M₁ ⟩ })
+... | yes _            | no ¬⊢M₂         = no (λ{ ⟨ A `× B , ⊢× _ ⊢M₂ ⟩ → ¬⊢M₂ ⟨ B , ⊢M₂ ⟩ })
+... | yes ⟨ A , ⊢M₁ ⟩   | yes ⟨ B , ⊢M₂ ⟩ = yes ⟨ (A `× B) , (⊢× ⊢M₁ ⊢M₂) ⟩
+synthesize Γ (`proj₁ M) with synthesize Γ M
+... | no ¬⊢M                = no (λ{ ⟨ A , ⊢proj₁ {Γ} {M} {A} {B} ⊢A×B ⟩ → ¬⊢M ⟨ A `× B , ⊢A×B ⟩ })
+... | yes ⟨ `ℕ , ⊢M ⟩       = no (λ{ ⟨ _ , ⊢proj₁ ⊢M↑ℕ ⟩ → ℕ̸≡× (uniq-↑ ⊢M ⊢M↑ℕ) })
+... | yes ⟨ A ⇒ B , ⊢M ⟩    = no (λ{ ⟨ _ , ⊢proj₁ ⊢M↑A⇒B ⟩ → ⇒≢× (uniq-↑ ⊢M ⊢M↑A⇒B) })
+... | yes ⟨ A `× B , ⊢A×B ⟩  = yes ⟨ A , ⊢proj₁ ⊢A×B ⟩
+synthesize Γ (`proj₂ M) with synthesize Γ M
+... | no ¬⊢M                = no (λ{ ⟨ B , ⊢proj₂ {Γ} {M} {A} {B} ⊢A×B ⟩ → ¬⊢M ⟨ A `× B , ⊢A×B ⟩ })
+... | yes ⟨ `ℕ , ⊢M ⟩       = no (λ{ ⟨ _ , ⊢proj₂ ⊢M↑ℕ ⟩ → ℕ̸≡× (uniq-↑ ⊢M ⊢M↑ℕ) })
+... | yes ⟨ A ⇒ B , ⊢M ⟩    = no (λ{ ⟨ _ , ⊢proj₂ ⊢M↑A⇒B ⟩ → ⇒≢× (uniq-↑ ⊢M ⊢M↑A⇒B) })
+... | yes ⟨ A `× B , ⊢A×B ⟩  = yes ⟨ B , ⊢proj₂ ⊢A×B ⟩
 ```
 There are three cases:
 
