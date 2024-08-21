@@ -851,7 +851,10 @@ There are three cases:
 
 We next consider the code for inheritance:
 ```agda
-inherit Γ (ƛ x ⇒ N) `ℕ      =  no  (λ())
+inherit Γ (ƛ x ⇒ N) `ℕ       =  no  (λ())
+inherit Γ (ƛ x ⇒ N) (A `× B) =  no  (λ())
+inherit Γ `zero (A `× B)      =  no  (λ())
+inherit Γ (`suc M) (A `× B)   =  no  (λ())
 inherit Γ (ƛ x ⇒ N) (A ⇒ B) with inherit (Γ , x ⦂ A) N B
 ... | no ¬⊢N                =  no  (λ{ (⊢ƛ ⊢N)  →  ¬⊢N ⊢N })
 ... | yes ⊢N                =  yes (⊢ƛ ⊢N)
@@ -864,6 +867,7 @@ inherit Γ (`suc M) (A ⇒ B)  =  no  (λ())
 inherit Γ (`case L [zero⇒ M |suc x ⇒ N ]) A with synthesize Γ L
 ... | no ¬∃                 =  no  (λ{ (⊢case ⊢L  _ _) → ¬∃ ⟨ `ℕ , ⊢L ⟩})
 ... | yes ⟨ _ ⇒ _ , ⊢L ⟩    =  no  (λ{ (⊢case ⊢L′ _ _) → ℕ≢⇒ (uniq-↑ ⊢L′ ⊢L) })
+... | yes ⟨ A `× B , ⊢L ⟩    = no   (λ{ (⊢case ⊢L′ _ _) → ℕ̸≡× (uniq-↑ ⊢L′ ⊢L) })
 ... | yes ⟨ `ℕ ,    ⊢L ⟩ with inherit Γ M A
 ...    | no ¬⊢M             =  no  (λ{ (⊢case _ ⊢M _) → ¬⊢M ⊢M })
 ...    | yes ⊢M with inherit (Γ , x ⦂ `ℕ) N A
@@ -1105,6 +1109,7 @@ First, we give code to erase a type:
 ∥_∥Tp : Type → DB.Type
 ∥ `ℕ ∥Tp             =  DB.`ℕ
 ∥ A ⇒ B ∥Tp          =  ∥ A ∥Tp DB.⇒ ∥ B ∥Tp
+∥ A `× B ∥Tp          = ∥ A ∥Tp DB.`× ∥ B ∥Tp
 ```
 It simply renames to the corresponding constructors in module `DB`.
 
@@ -1134,6 +1139,9 @@ there are two mutually recursive erasure functions:
 ∥ ⊢` ⊢x ∥⁺           =  DB.` ∥ ⊢x ∥∋
 ∥ ⊢L · ⊢M ∥⁺         =  ∥ ⊢L ∥⁺ DB.· ∥ ⊢M ∥⁻
 ∥ ⊢↓ ⊢M ∥⁺           =  ∥ ⊢M ∥⁻
+∥ ⊢proj₁ ⊢A×B ∥⁺     = DB.`proj₁ ∥ ⊢A×B ∥⁺
+∥ ⊢proj₂ ⊢A×B ∥⁺     = DB.`proj₂ ∥ ⊢A×B ∥⁺
+∥ ⊢× ⊢A ⊢B ∥⁺        = DB.`⟨_,_⟩ ∥ ⊢A ∥⁺ ∥ ⊢B ∥⁺
 
 ∥ ⊢ƛ ⊢N ∥⁻           =  DB.ƛ ∥ ⊢N ∥⁻
 ∥ ⊢zero ∥⁻           =  DB.`zero
@@ -1172,7 +1180,60 @@ erasure of the inferred typing yields your definition of
 multiplication from Chapter [DeBruijn](/DeBruijn/).
 
 ```agda
--- Your code goes here
+{-
+mul⁺ = 
+  (μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+    `case (` "m") [zero⇒ `zero
+                  |suc "m" ⇒ plus · (` "n" ↑) · (` "*" · (` "m" ↑) · (` "n" ↑) ↑) ↑ ])
+      ↓ (`ℕ ⇒ `ℕ ⇒ `ℕ)
+
+plus : Term⁺
+plus = 
+  (μ "p" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+    `case (` "m") [zero⇒ ` "n" ↑
+                  |suc "m" ⇒ `suc (` "p" · (` "m" ↑) · (` "n" ↑) ↑) ])
+      ↓ (`ℕ ⇒ `ℕ ⇒ `ℕ)
+-}
+
+⊢plus : ∀ {Γ} → Γ ⊢ plus ↑ `ℕ ⇒ `ℕ ⇒ `ℕ
+⊢plus =
+  (⊢↓
+   (⊢μ
+    (⊢ƛ
+     (⊢ƛ
+      (⊢case (⊢` (S′ Z)) (⊢↑ (⊢` Z) refl)
+       (⊢suc
+        (⊢↑
+         (⊢`
+          (S′
+           (S′
+            (S′ Z)))
+          · ⊢↑ (⊢` Z) refl
+          · ⊢↑ (⊢` (S′ Z)) refl)
+         refl)))))))
+
+⊢mul⁺ : ∅ ⊢ mul⁺ ↑ `ℕ ⇒ `ℕ ⇒ `ℕ
+⊢mul⁺ = 
+  (⊢↓ 
+    (⊢μ 
+      (⊢ƛ 
+        (⊢ƛ 
+          (⊢case 
+            (⊢` (S′ Z)) 
+            ⊢zero 
+            (⊢↑ 
+              (⊢plus · 
+              ⊢↑ (⊢` (S′ Z)) refl · 
+              ⊢↑ (⊢` (S′ (S′ (S′ Z))) · 
+                ⊢↑ (⊢` Z) refl · 
+                ⊢↑ (⊢` (S′ Z)) refl) refl) refl)
+          ))))) 
+
+_ : synthesize ∅ mul⁺ ≡ yes ⟨ `ℕ ⇒ `ℕ ⇒ `ℕ , ⊢mul⁺ ⟩
+_ = refl
+
+_ : ∥ ⊢mul⁺ ∥⁺ ≡ DB.mul
+_ = refl
 ```
 
 #### Exercise `inference-products` (recommended)
@@ -1183,6 +1244,7 @@ bidirectional inference to include products. Also extend erasure.
 
 ```agda
 -- Your code goes here
+-- code is as above.
 ```
 
 #### Exercise `inference-rest` (stretch)
@@ -1224,3 +1286,4 @@ This chapter uses the following unicode:
     ↓  U+2193:  DOWNWARDS ARROW (\d)
     ↑  U+2191:  UPWARDS ARROW (\u)
     ∥  U+2225:  PARALLEL TO (\||)
+ 
